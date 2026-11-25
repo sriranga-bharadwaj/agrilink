@@ -1,0 +1,78 @@
+# AgriLink: MySQL + MongoDB + Next.js app with sample data.
+#   docker compose up --build      start everything (first run builds and seeds)
+#   docker compose down            stop (data is kept)
+#   docker compose down -v         stop and delete all data (next up re-seeds)
+# The database ports are not published, so this runs next to a local MySQL/MongoDB.
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: agrilink_root_dev
+      MYSQL_DATABASE: agrilink
+      MYSQL_USER: agrilink
+      MYSQL_PASSWORD: agrilink_dev
+    # Same server settings 00_setup_root.sql applies on a local install.
+    command: ["--log-bin-trust-function-creators=1", "--event-scheduler=ON"]
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./database/mysql/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./database/mysql/02_functions_triggers.sql:/docker-entrypoint-initdb.d/02_functions_triggers.sql:ro
+      - ./database/mysql/03_procedures.sql:/docker-entrypoint-initdb.d/03_procedures.sql:ro
+      - ./database/mysql/04_views.sql:/docker-entrypoint-initdb.d/04_views.sql:ro
+      - ./database/mysql/05_seed.sql:/docker-entrypoint-initdb.d/05_seed.sql:ro
+    healthcheck:
+      # TCP is off while the init scripts run, so this passes only once seeding is done.
+      test: ["CMD", "mysql", "-h127.0.0.1", "-uagrilink", "-pagrilink_dev", "-e", "SELECT 1 FROM agrilink.orders LIMIT 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+
+  mongo:
+    image: mongo:8.0
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  mongo-seed:
+    image: agrilink-web   # built by the web service
+    pull_policy: never
+    command: ["node", "scripts/mongodb/init-once.mjs"]
+    environment:
+      MONGODB_URI: mongodb://mongo:27017
+      MONGODB_DB: agrilink
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: "no"
+
+  web:
+    build: ./web
+    image: agrilink-web
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: agrilink
+      DB_PASSWORD: agrilink_dev
+      DB_NAME: agrilink
+      MONGODB_URI: mongodb://mongo:27017
+      MONGODB_DB: agrilink
+      SESSION_SECRET: ${SESSION_SECRET:-local-docker-dev-secret-change-me}
+      SESSION_COOKIE_SECURE: "false"
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      mongo-seed:
+        condition: service_completed_successfully
+
+volumes:
+  mysql-data:
+  mongo-data:

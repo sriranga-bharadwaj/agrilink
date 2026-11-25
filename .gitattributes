@@ -1,0 +1,6 @@
+# Keep LF endings on every platform: the SQL files are fed to MySQL in Docker,
+# where CRLF would break statements such as DELIMITER $$.
+* text=auto eol=lf
+*.png binary
+*.ico binary
+*.docx binary
