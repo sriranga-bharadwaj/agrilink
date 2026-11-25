@@ -107,6 +107,25 @@ Requires MySQL 8, MongoDB and Node.js 24.
 - Indexes: unique, compound, wildcard (`attributes.$**`), multikey and text.
 - Each listing and requirement document shares its id with the MySQL row. If the MongoDB write fails, the MySQL insert is undone.
 
+## Automated tests
+
+There are 31 tests, built on Node's built-in test runner:
+
+| File | Tests | What it covers |
+|---|---|---|
+| [`mysql.test.mjs`](web/tests/mysql.test.mjs) | 16 | Matching filters and ranking. Ordering: stock, price copy, generated total, oversell and rollback, requirement fill, ownership and crop checks. All lifecycle triggers: illegal jumps, immutable quantity, delivery tracking, audit history, stock returned on cancel. Review rules, CHECK constraints and the expiry procedure. |
+| [`mongo.test.mjs`](web/tests/mongo.test.mjs) | 6 | `$jsonSchema` rejections, the unique link to MySQL, wildcard-index use, the buyer quality-spec filter, cosine similarity, and a semantic-search query |
+| [`quality.test.mjs`](web/tests/quality.test.mjs) | 9 | Quality-constraint logic and form parsing |
+
+Each database test creates its own rows and deletes them afterwards, so the suite can run repeatedly against the sample data. Every "blocked" case also checks that nothing changed.
+
+```bash
+docker compose -p agrilink-test run --rm web npm test   # throwaway databases
+docker compose -p agrilink-test down -v
+```
+
+Without Docker, run `npm run test:local` in `web/` against the databases built by `run_all.ps1`.
+
 ## Performance and correctness tests
 
 Both scripts run inside a throwaway Docker project, so they never touch your normal data. They clean up their own rows, and `down -v` removes the project afterwards.
