@@ -107,6 +107,52 @@ Requires MySQL 8, MongoDB and Node.js 24.
 - Indexes: unique, compound, wildcard (`attributes.$**`), multikey and text.
 - Each listing and requirement document shares its id with the MySQL row. If the MongoDB write fails, the MySQL insert is undone.
 
+## Performance and correctness tests
+
+Both scripts run inside a throwaway Docker project, so they never touch your normal data. They clean up their own rows, and `down -v` removes the project afterwards.
+
+```bash
+docker compose -p agrilink-bench run --rm web node scripts/bench/load-test.mjs
+docker compose -p agrilink-bench run --rm web node scripts/bench/query-benchmark.mjs
+docker compose -p agrilink-bench down -v
+```
+
+Results below are from one run on an Intel Core i5-12450H laptop (16 GB RAM, Docker Desktop with 12 CPUs / 8 GB), MySQL 8.0.46.
+
+### Concurrent orders: no overselling
+
+[`load-test.mjs`](web/scripts/bench/load-test.mjs) creates a listing with 1,000 kg of stock. It opens 100 separate MySQL connections and fires 100 simultaneous 25 kg purchases at it, which is 2,500 kg of demand for 1,000 kg of stock. Exactly 40 must succeed. Each round checks four things:
+- the number of successes
+- stock never below 0
+- kg sold + kg remaining = 1,000
+- one audit-history row per order
+
+As a control, it reruns the same harness with a naive read-then-write that has no row lock.
+
+| Purchase path | Rounds | Calls | Succeeded per round | Oversold | Checks |
+|---|---|---|---|---|---|
+| `sp_place_order` (`SELECT … FOR UPDATE`, rollback on error) | 5 | 500 | 40 (60 refused "Only X kg available") | **0 kg** | all passed, no deadlocks or timeouts |
+| Naive read-then-write (control) | 5 | 500 | 100 | 1,500 kg per round | failed |
+
+The control shows the harness really races: every naive request read the same 1,000 kg. The row lock is what keeps the stock correct.
+
+### Matching query: composite index
+
+[`query-benchmark.mjs`](web/scripts/bench/query-benchmark.mjs) loads 100,000 synthetic listings with a fixed, seeded distribution:
+- 10 crops and 6 farms
+- 20% ACTIVE, the rest sold out, expired or withdrawn
+- prices from ₹10 to ₹40/kg and grades A/B/C
+
+It then times the whole `CALL sp_find_matches(1)`: delete old suggestions, filter and score, insert matches, return the ranking. Each setup gets 3 warm-up calls and then 15 measured calls (median shown). Every setup returns the same 190 matches.
+
+| Index on `listings` | Median | Min–max | MySQL plan for the filter | Rows examined (est.) |
+|---|---|---|---|---|
+| `idx_listings_match (crop_id, status, price_per_kg)` | **36.7 ms** | 33.2–49.5 ms | range scan | **624** |
+| `crop_id` only (what the foreign key alone gives) | 63.5 ms | 51.5–86.5 ms | ref lookup | 10,241 |
+| None (full table scan) | 56.5 ms | 46.3–122.5 ms | full scan | 99,946 |
+
+With the composite index, MySQL plans to read about **16× fewer rows** than with the `crop_id` index and **160× fewer** than a full scan. The whole procedure gets **1.7× faster**. The rest of its time goes to scoring, the distance function and writing the 190 match rows, which the index does not affect.
+
 ## Screenshots
 
 | Marketplace semantic search | Buyer dashboard | Farmer dashboard |
