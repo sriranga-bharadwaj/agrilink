@@ -52,7 +52,7 @@ Open http://localhost:3000. The first run builds the image, creates both databas
 | `docker compose down` | Stop; data is kept |
 | `docker compose down -v` | Stop and delete all data; the next `up` re-seeds |
 
-The database ports are not published, so this runs alongside a local MySQL or MongoDB. To use a different app port, set it first, e.g. `APP_PORT=3001 docker compose up`.
+The database ports are not published, so this runs alongside a local MySQL or MongoDB. To use a different app port, set `APP_PORT` first: `$env:APP_PORT=3001; docker compose up` in PowerShell, or `APP_PORT=3001 docker compose up` in bash.
 
 ### Demo accounts
 
