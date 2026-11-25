@@ -1,5 +1,7 @@
 # AgriLink
 
+[![CI](https://github.com/sriranga-bharadwaj/agrilink/actions/workflows/ci.yml/badge.svg)](https://github.com/sriranga-bharadwaj/agrilink/actions/workflows/ci.yml)
+
 **A quality-aware, direct farm-to-business agricultural marketplace.**
 
 Farmers list produce; businesses (processors, hotels, retailers, exporters) post what they need. AgriLink matches the two on price, quantity, distance, freshness and crop-specific quality, then lets the buyer order in one safe transaction.
@@ -125,6 +127,8 @@ docker compose -p agrilink-test down -v
 ```
 
 Without Docker, run `npm run test:local` in `web/` against the databases built by `run_all.ps1`.
+
+GitHub Actions ([`ci.yml`](.github/workflows/ci.yml)) runs the same two commands on every push and pull request. The image build also lints and type-checks the app.
 
 ## Performance and correctness tests
 

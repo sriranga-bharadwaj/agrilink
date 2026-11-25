@@ -1,0 +1,32 @@
+# Builds the app image (lint + type-check run inside `next build`), starts MySQL and MongoDB
+# with the sample data, and runs the full test suite - the same commands as a local run.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker compose -p agrilink-ci build
+
+      - name: Run tests
+        run: docker compose -p agrilink-ci run --rm web npm test
+
+      - name: Service logs
+        if: failure()
+        run: docker compose -p agrilink-ci logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose -p agrilink-ci down -v
