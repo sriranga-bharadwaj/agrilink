@@ -1,0 +1,122 @@
+{
+  "alpha": 0.2,
+  "hyperparameters": {
+    "max_iter": 600,
+    "max_leaf_nodes": 31,
+    "min_samples_leaf": 200
+  },
+  "ridge_alpha": 100.0,
+  "cqr_log_correction": {
+    "pooled": 0.03530294758584729,
+    "Broken rice": 0.03530294758584729,
+    "Groundnut": 0.03530294758584729,
+    "Onion": 0.058398000795855776,
+    "Potato": 0.008957812503554319,
+    "Rice": 0.027496911287569148,
+    "Tomato": 0.021667508546741487
+  },
+  "serving_choice": {
+    "Broken rice": {
+      "serve": "median30",
+      "best_baseline_on_calibration": "median30",
+      "calibration_mae": {
+        "model": 1.849,
+        "persistence": 1.907,
+        "median30": 1.737,
+        "seasonal": 3.484,
+        "ridge": 2.104
+      }
+    },
+    "Groundnut": {
+      "serve": "model",
+      "best_baseline_on_calibration": "median30",
+      "calibration_mae": {
+        "model": 5.758,
+        "persistence": 6.668,
+        "median30": 6.25,
+        "seasonal": 6.668,
+        "ridge": 6.724
+      }
+    },
+    "Onion": {
+      "serve": "model",
+      "best_baseline_on_calibration": "persistence",
+      "calibration_mae": {
+        "model": 2.347,
+        "persistence": 2.382,
+        "median30": 3.8,
+        "seasonal": 3.493,
+        "ridge": 2.618
+      }
+    },
+    "Potato": {
+      "serve": "model",
+      "best_baseline_on_calibration": "median30",
+      "calibration_mae": {
+        "model": 1.916,
+        "persistence": 2.214,
+        "median30": 2.023,
+        "seasonal": 5.419,
+        "ridge": 2.123
+      }
+    },
+    "Rice": {
+      "serve": "model",
+      "best_baseline_on_calibration": "median30",
+      "calibration_mae": {
+        "model": 6.69,
+        "persistence": 7.096,
+        "median30": 6.966,
+        "seasonal": 9.113,
+        "ridge": 7.074
+      }
+    },
+    "Tomato": {
+      "serve": "model",
+      "best_baseline_on_calibration": "persistence",
+      "calibration_mae": {
+        "model": 3.377,
+        "persistence": 3.421,
+        "median30": 4.694,
+        "seasonal": 10.409,
+        "ridge": 3.472
+      }
+    }
+  },
+  "numeric_features": [
+    "lag1",
+    "vol30",
+    "n30",
+    "days_since",
+    "yoy_missing",
+    "month_sin",
+    "month_cos",
+    "doy_sin",
+    "doy_cos",
+    "market_premium",
+    "d_lag2",
+    "d_med7",
+    "d_med30",
+    "d_med90",
+    "d_state30",
+    "d_yoy"
+  ],
+  "categorical_features": [
+    "product",
+    "State",
+    "vgroup",
+    "feature_level"
+  ],
+  "derived": {
+    "d_lag2": "lag2",
+    "d_med7": "med7",
+    "d_med30": "med30",
+    "d_med90": "med90",
+    "d_state30": "state_med30",
+    "d_yoy": "yoy"
+  },
+  "target": "log(price_t) - lag1",
+  "train_rows": 157061,
+  "calibration_rows": 5058,
+  "test_rows": 5076
+}

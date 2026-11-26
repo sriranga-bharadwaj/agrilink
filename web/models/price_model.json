@@ -1,0 +1,1260 @@
+{
+  "description": "7-day-ahead mandi price model (Agmarknet). Inputs are as-of features; outputs are the log change from lag1. price = exp(lag1 + output).",
+  "horizon_days": 7,
+  "data": {
+    "source": "Agmarknet variety-wise daily prices via data.gov.in (Open Government Data License - India)",
+    "splits": {
+      "train": [
+        "2015-01-01",
+        "2026-05-13"
+      ],
+      "calibration": [
+        "2026-05-21",
+        "2026-08-19"
+      ],
+      "test": [
+        "2026-08-27",
+        "2026-11-25"
+      ]
+    }
+  },
+  "products": [
+    "Tomato",
+    "Onion",
+    "Potato",
+    "Rice",
+    "Broken rice",
+    "Groundnut"
+  ],
+  "levels": {
+    "market+variety": [
+      "product",
+      "vgroup",
+      "State",
+      "market_key"
+    ],
+    "market+product": [
+      "product",
+      "State",
+      "market_key"
+    ],
+    "state+variety": [
+      "product",
+      "vgroup",
+      "State"
+    ],
+    "state+product": [
+      "product",
+      "State"
+    ]
+  },
+  "usable_staleness_days": 21,
+  "min_n30": 3,
+  "variety_groups": {
+    "Tomato": [
+      "hybrid"
+    ],
+    "Onion": [
+      "1st sort",
+      "2nd sort",
+      "beelary-red",
+      "pole",
+      "red"
+    ],
+    "Potato": [
+      "jalander"
+    ],
+    "Rice": [
+      "1009 kar",
+      "coarse",
+      "dappa",
+      "fine",
+      "hansa",
+      "jaya",
+      "medium",
+      "sarbati raw",
+      "sona"
+    ],
+    "Broken rice": [
+      "broken rice"
+    ],
+    "Groundnut": []
+  },
+  "market_premium": {
+    "window_days": 365,
+    "min_days": 30,
+    "as_of": "t - horizon"
+  },
+  "inputs": {
+    "categorical": [
+      "product",
+      "State",
+      "vgroup",
+      "feature_level"
+    ],
+    "numeric": [
+      "lag1",
+      "vol30",
+      "n30",
+      "days_since",
+      "yoy_missing",
+      "month_sin",
+      "month_cos",
+      "doy_sin",
+      "doy_cos",
+      "market_premium",
+      "d_lag2",
+      "d_med7",
+      "d_med30",
+      "d_med90",
+      "d_state30",
+      "d_yoy"
+    ],
+    "derived": {
+      "d_lag2": "lag2",
+      "d_med7": "med7",
+      "d_med30": "med30",
+      "d_med90": "med90",
+      "d_state30": "state_med30",
+      "d_yoy": "yoy"
+    },
+    "dtype": "categorical as string [n,1], numeric as float32 [n,1]"
+  },
+  "models": {
+    "point": "price_point.onnx",
+    "q10": "price_q10.onnx",
+    "q90": "price_q90.onnx"
+  },
+  "interval": {
+    "alpha": 0.2,
+    "cqr_log_correction": {
+      "pooled": 0.03530294758584729,
+      "Broken rice": 0.03530294758584729,
+      "Groundnut": 0.03530294758584729,
+      "Onion": 0.058398000795855776,
+      "Potato": 0.008957812503554319,
+      "Rice": 0.027496911287569148,
+      "Tomato": 0.021667508546741487
+    }
+  },
+  "serving_choice": {
+    "Broken rice": "median30",
+    "Groundnut": "model",
+    "Onion": "model",
+    "Potato": "model",
+    "Rice": "model",
+    "Tomato": "model"
+  },
+  "onnx_vs_sklearn_max_abs_diff": {
+    "point": {
+      "test_rows": 5076,
+      "rows_differing_over_1e-4": 116,
+      "max_abs_log_diff": 0.04530123890264605,
+      "mean_abs_log_diff": 0.00011004810762580688,
+      "test_mae_rs_onnx": 4.408527798487624,
+      "test_mae_rs_sklearn": 4.407777873862695
+    },
+    "q10": {
+      "test_rows": 5076,
+      "rows_differing_over_1e-4": 341,
+      "max_abs_log_diff": 0.011419530035606695,
+      "mean_abs_log_diff": 0.00019865114735743812
+    },
+    "q90": {
+      "test_rows": 5076,
+      "rows_differing_over_1e-4": 240,
+      "max_abs_log_diff": 0.01964830365842203,
+      "mean_abs_log_diff": 0.00018044443000568965
+    }
+  },
+  "parity_examples": [
+    {
+      "keys": {
+        "product": "Broken rice",
+        "vgroup": "Broken Rice",
+        "State": "Karnataka",
+        "market_key": "mandya",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-09-12",
+      "features": {
+        "lag1": 3.091042453358316,
+        "lag2": 3.258096538021482,
+        "med7": 3.091042453358316,
+        "med30": 3.091042453358316,
+        "med90": 3.091042453358316,
+        "vol30": 0.08352704233158305,
+        "n30": 4.0,
+        "days_since": 7.0,
+        "state_med30": 3.146247318539632,
+        "yoy": 3.1780538303479458,
+        "yoy_missing": 0.0,
+        "month_sin": -1.0,
+        "month_cos": -1.8369701987210297e-16,
+        "doy_sin": -0.9474042892438845,
+        "doy_cos": -0.32003923622313857,
+        "market_premium": 0.0
+      },
+      "expected_log_change": {
+        "point": 0.014834047295153141,
+        "q10": -0.10713662207126617,
+        "q90": 0.19522887468338013
+      },
+      "expected_price": 22.328786849975586
+    },
+    {
+      "keys": {
+        "product": "Broken rice",
+        "vgroup": "Broken Rice",
+        "State": "Karnataka",
+        "market_key": "tnarasipura",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-10-04",
+      "features": {
+        "lag1": 3.1780538303479458,
+        "lag2": 3.1780538303479458,
+        "med7": 3.1780538303479458,
+        "med30": 3.1780538303479458,
+        "med90": 3.1780538303479458,
+        "vol30": 0.044971812913646644,
+        "n30": 10.0,
+        "days_since": 7.0,
+        "state_med30": 3.1780538303479458,
+        "yoy": 3.1780538303479458,
+        "yoy_missing": 0.0,
+        "month_sin": -0.8660254037844386,
+        "month_cos": 0.5000000000000001,
+        "doy_sin": -0.9986126020839734,
+        "doy_cos": 0.052658056924614005,
+        "market_premium": 0.0
+      },
+      "expected_log_change": {
+        "point": 0.002290562493726611,
+        "q10": -0.07198281586170197,
+        "q90": 0.06385573744773865
+      },
+      "expected_price": 24.055034637451172
+    },
+    {
+      "keys": {
+        "product": "Broken rice",
+        "vgroup": "Broken Rice",
+        "State": "Karnataka",
+        "market_key": "mandya",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-11-13",
+      "features": {
+        "lag1": 3.258096538021482,
+        "lag2": 3.349904087274605,
+        "med7": 3.349904087274605,
+        "med30": 3.2676206355068294,
+        "med90": 3.1780538303479458,
+        "vol30": 0.10045998362272726,
+        "n30": 12.0,
+        "days_since": 7.0,
+        "state_med30": 3.1457845697791598,
+        "yoy": 3.020127355638707,
+        "yoy_missing": 0.0,
+        "month_sin": -0.5000000000000004,
+        "month_cos": 0.8660254037844384,
+        "doy_sin": -0.7379428103031386,
+        "doy_cos": 0.6748632518680403,
+        "market_premium": 0.0
+      },
+      "expected_log_change": {
+        "point": 0.01450879592448473,
+        "q10": -0.12184420228004456,
+        "q90": 0.1493036299943924
+      },
+      "expected_price": 26.379974365234375
+    },
+    {
+      "keys": {
+        "product": "Groundnut",
+        "vgroup": "Other",
+        "State": "Karnataka",
+        "market_key": "bengaluru",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-11-05",
+      "features": {
+        "lag1": 3.912023005428146,
+        "lag2": 3.912023005428146,
+        "med7": 3.912023005428146,
+        "med30": 3.912023005428146,
+        "med90": 3.912023005428146,
+        "vol30": 0.0,
+        "n30": 16.0,
+        "days_since": 7.0,
+        "state_med30": 4.00914806925776,
+        "yoy": null,
+        "yoy_missing": 1.0,
+        "month_sin": -0.5000000000000004,
+        "month_cos": 0.8660254037844384,
+        "doy_sin": -0.8235472349556007,
+        "doy_cos": 0.5672476988027229,
+        "market_premium": 0.0
+      },
+      "expected_log_change": {
+        "point": 0.0,
+        "q10": -0.023360759019851685,
+        "q90": 0.02520197629928589
+      },
+      "expected_price": 50.0
+    },
+    {
+      "keys": {
+        "product": "Groundnut",
+        "vgroup": "Other",
+        "State": "Karnataka",
+        "market_key": "bengaluru",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-10-24",
+      "features": {
+        "lag1": 3.912023005428146,
+        "lag2": 3.912023005428146,
+        "med7": 3.912023005428146,
+        "med30": 3.912023005428146,
+        "med90": 3.912023005428146,
+        "vol30": 0.0,
+        "n30": 18.0,
+        "days_since": 7.0,
+        "state_med30": 3.912023005428146,
+        "yoy": null,
+        "yoy_missing": 1.0,
+        "month_sin": -0.8660254037844386,
+        "month_cos": 0.5000000000000001,
+        "doy_sin": -0.9223291176290545,
+        "doy_cos": 0.3864052261209853,
+        "market_premium": -0.0027424651152849755
+      },
+      "expected_log_change": {
+        "point": 0.0,
+        "q10": -0.025128692388534546,
+        "q90": 0.008663386106491089
+      },
+      "expected_price": 50.0
+    },
+    {
+      "keys": {
+        "product": "Groundnut",
+        "vgroup": "Other",
+        "State": "Karnataka",
+        "market_key": "bengaluru",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-09-24",
+      "features": {
+        "lag1": 4.051784947803305,
+        "lag2": 4.051784947803305,
+        "med7": 4.051784947803305,
+        "med30": 3.912023005428146,
+        "med90": 3.8607297110405954,
+        "vol30": 0.07010896843670045,
+        "n30": 18.0,
+        "days_since": 9.0,
+        "state_med30": 3.9937299698613096,
+        "yoy": null,
+        "yoy_missing": 1.0,
+        "month_sin": -1.0,
+        "month_cos": -1.8369701987210297e-16,
+        "doy_sin": -0.9928872135356962,
+        "doy_cos": -0.11905873003404988,
+        "market_premium": -0.028195303537232652
+      },
+      "expected_log_change": {
+        "point": -0.06023796647787094,
+        "q10": -0.25329670310020447,
+        "q90": 0.033940404653549194
+      },
+      "expected_price": 54.138580322265625
+    },
+    {
+      "keys": {
+        "product": "Onion",
+        "vgroup": "Other",
+        "State": "Maharashtra",
+        "market_key": "manmad",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-11-17",
+      "features": {
+        "lag1": 3.644143560272545,
+        "lag2": 3.6375861597263857,
+        "med7": 3.6571099437116925,
+        "med30": 3.657130755799356,
+        "med90": 3.6635616461296463,
+        "vol30": 0.07502417397377359,
+        "n30": 25.0,
+        "days_since": 12.0,
+        "state_med30": 3.6635616461296463,
+        "yoy": null,
+        "yoy_missing": 1.0,
+        "month_sin": -0.5000000000000004,
+        "month_cos": 0.8660254037844384,
+        "doy_sin": -0.6897960046655887,
+        "doy_cos": 0.7240037789593305,
+        "market_premium": 0.0
+      },
+      "expected_log_change": {
+        "point": 0.017319384962320328,
+        "q10": -0.28115811944007874,
+        "q90": 0.20187801122665405
+      },
+      "expected_price": 38.918243408203125
+    },
+    {
+      "keys": {
+        "product": "Onion",
+        "vgroup": "Other",
+        "State": "Karnataka",
+        "market_key": "bengaluru",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-09-03",
+      "features": {
+        "lag1": 3.5409593240373143,
+        "lag2": 3.5409593240373143,
+        "med7": 3.3141860046725258,
+        "med30": 2.995732273553991,
+        "med90": 2.917770732084279,
+        "vol30": 0.2073971493157012,
+        "n30": 23.0,
+        "days_since": 7.0,
+        "state_med30": 3.295836866004329,
+        "yoy": null,
+        "yoy_missing": 1.0,
+        "month_sin": -1.0,
+        "month_cos": -1.8369701987210297e-16,
+        "doy_sin": -0.886721063082993,
+        "doy_cos": -0.46230483047981086,
+        "market_premium": -0.30010459245033827
+      },
+      "expected_log_change": {
+        "point": -0.14930742979049683,
+        "q10": -0.3631647229194641,
+        "q90": 0.02775821089744568
+      },
+      "expected_price": 29.714996337890625
+    },
+    {
+      "keys": {
+        "product": "Onion",
+        "vgroup": "Other",
+        "State": "Maharashtra",
+        "market_key": "yeola",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-11-25",
+      "features": {
+        "lag1": 3.6506582412937387,
+        "lag2": 3.597312260588446,
+        "med7": 3.597312260588446,
+        "med30": 3.627619052275977,
+        "med90": 3.6375861597263857,
+        "vol30": 0.034263271256898736,
+        "n30": 14.0,
+        "days_since": 7.0,
+        "state_med30": 3.6635616461296463,
+        "yoy": null,
+        "yoy_missing": 1.0,
+        "month_sin": -0.5000000000000004,
+        "month_cos": 0.8660254037844384,
+        "doy_sin": -0.5839514998576998,
+        "doy_cos": 0.8117885474764613,
+        "market_premium": -0.06662724968255218
+      },
+      "expected_log_change": {
+        "point": -0.11789296567440033,
+        "q10": -0.2371111959218979,
+        "q90": 0.04297401010990143
+      },
+      "expected_price": 34.21845626831055
+    },
+    {
+      "keys": {
+        "product": "Potato",
+        "vgroup": "Common",
+        "State": "Maharashtra",
+        "market_key": "nasik",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-09-18",
+      "features": {
+        "lag1": 2.0794415416798357,
+        "lag2": 2.0794415416798357,
+        "med7": 2.109753852588053,
+        "med30": 2.1400661634962708,
+        "med90": 2.1400661634962708,
+        "vol30": 0.049204256117632045,
+        "n30": 22.0,
+        "days_since": 7.0,
+        "state_med30": 2.1400661634962708,
+        "yoy": 2.6390573296152584,
+        "yoy_missing": 0.0,
+        "month_sin": -1.0,
+        "month_cos": -1.8369701987210297e-16,
+        "doy_sin": -0.9753363880767837,
+        "doy_cos": -0.2207236509605022,
+        "market_premium": 0.0
+      },
+      "expected_log_change": {
+        "point": 0.005456896964460611,
+        "q10": -0.11960016191005707,
+        "q90": 0.08932943642139435
+      },
+      "expected_price": 8.04377555847168
+    },
+    {
+      "keys": {
+        "product": "Potato",
+        "vgroup": "Common",
+        "State": "Karnataka",
+        "market_key": "chickkaballapura",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-09-16",
+      "features": {
+        "lag1": 2.772588722239781,
+        "lag2": 3.044522437723423,
+        "med7": 2.943052015725078,
+        "med30": 2.8903717578961645,
+        "med90": 2.772588722239781,
+        "vol30": 0.10916339996732229,
+        "n30": 26.0,
+        "days_since": 7.0,
+        "state_med30": 2.8622008809294686,
+        "yoy": 2.8903717578961645,
+        "yoy_missing": 0.0,
+        "month_sin": -1.0,
+        "month_cos": -1.8369701987210297e-16,
+        "doy_sin": -0.9671667297977312,
+        "doy_cos": -0.2541427094613622,
+        "market_premium": -0.17191174290275968
+      },
+      "expected_log_change": {
+        "point": 0.09220831096172333,
+        "q10": -0.10256744921207428,
+        "q90": 0.2708880305290222
+      },
+      "expected_price": 17.54549217224121
+    },
+    {
+      "keys": {
+        "product": "Potato",
+        "vgroup": "Common",
+        "State": "Karnataka",
+        "market_key": "nanjangud",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-09-18",
+      "features": {
+        "lag1": 4.0163830207523885,
+        "lag2": 3.729541435832826,
+        "med7": 3.729541435832826,
+        "med30": 3.6117283949255214,
+        "med90": 3.4111477125153233,
+        "vol30": 0.18020428911100847,
+        "n30": 15.0,
+        "days_since": 7.0,
+        "state_med30": 2.8622008809294686,
+        "yoy": 2.8903717578961645,
+        "yoy_missing": 0.0,
+        "month_sin": -1.0,
+        "month_cos": -1.8369701987210297e-16,
+        "doy_sin": -0.9753363880767837,
+        "doy_cos": -0.2207236509605022,
+        "market_premium": 0.733869170079867
+      },
+      "expected_log_change": {
+        "point": -0.34626248478889465,
+        "q10": -0.9577468633651733,
+        "q90": 0.014236658811569214
+      },
+      "expected_price": 39.25664138793945
+    },
+    {
+      "keys": {
+        "product": "Rice",
+        "vgroup": "Common",
+        "State": "Karnataka",
+        "market_key": "hassan",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-10-01",
+      "features": {
+        "lag1": 4.248495242049359,
+        "lag2": 4.1956970564823886,
+        "med7": 4.222096149265874,
+        "med30": 4.190397990986477,
+        "med90": 3.9852734671677386,
+        "vol30": 0.4804648029316701,
+        "n30": 8.0,
+        "days_since": 9.0,
+        "state_med30": 3.676300671907076,
+        "yoy": 3.3050114353384275,
+        "yoy_missing": 0.0,
+        "month_sin": -0.8660254037844386,
+        "month_cos": 0.5000000000000001,
+        "doy_sin": -0.9999994220246925,
+        "doy_cos": 0.001075151282798226,
+        "market_premium": 0.0
+      },
+      "expected_log_change": {
+        "point": -0.23896795511245728,
+        "q10": -0.7831364870071411,
+        "q90": -0.014740824699401855
+      },
+      "expected_price": 55.12080383300781
+    },
+    {
+      "keys": {
+        "product": "Rice",
+        "vgroup": "Fine",
+        "State": "Karnataka",
+        "market_key": "mysuru",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-11-13",
+      "features": {
+        "lag1": 3.1780538303479458,
+        "lag2": 4.551769409260976,
+        "med7": 3.332204510175204,
+        "med30": 4.072439726834051,
+        "med90": 3.7436043538031827,
+        "vol30": 0.47208893488386267,
+        "n30": 17.0,
+        "days_since": 8.0,
+        "state_med30": 4.350277936359301,
+        "yoy": 4.058357812409556,
+        "yoy_missing": 0.0,
+        "month_sin": -0.5000000000000004,
+        "month_cos": 0.8660254037844384,
+        "doy_sin": -0.7379428103031386,
+        "doy_cos": 0.6748632518680403,
+        "market_premium": -0.26062565944869887
+      },
+      "expected_log_change": {
+        "point": 0.6075140237808228,
+        "q10": 0.023788660764694214,
+        "q90": 1.0355939865112305
+      },
+      "expected_price": 44.06067657470703
+    },
+    {
+      "keys": {
+        "product": "Rice",
+        "vgroup": "Common",
+        "State": "Karnataka",
+        "market_key": "mandya",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-10-28",
+      "features": {
+        "lag1": 3.2188758248682006,
+        "lag2": 3.1354942159291497,
+        "med7": 3.1780538303479458,
+        "med30": 3.1780538303479458,
+        "med90": 3.1780538303479458,
+        "vol30": 0.04584355138454502,
+        "n30": 10.0,
+        "days_since": 11.0,
+        "state_med30": 3.6632328069201607,
+        "yoy": 3.2445435716167785,
+        "yoy_missing": 0.0,
+        "month_sin": -0.8660254037844386,
+        "month_cos": 0.5000000000000001,
+        "doy_sin": -0.8935790198239952,
+        "doy_cos": 0.4489059314938798,
+        "market_premium": 0.0
+      },
+      "expected_log_change": {
+        "point": -0.023798635229468346,
+        "q10": -0.08620640635490417,
+        "q90": 0.17676597833633423
+      },
+      "expected_price": 24.41205596923828
+    },
+    {
+      "keys": {
+        "product": "Tomato",
+        "vgroup": "Common",
+        "State": "Karnataka",
+        "market_key": "chintamani",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-10-23",
+      "features": {
+        "lag1": 2.4849066497880004,
+        "lag2": 2.4849066497880004,
+        "med7": 2.4849066497880004,
+        "med30": 2.5363353425078543,
+        "med90": 2.302585092994046,
+        "vol30": 0.1499879309747581,
+        "n30": 30.0,
+        "days_since": 8.0,
+        "state_med30": 2.70805020110221,
+        "yoy": 2.5931856624742684,
+        "yoy_missing": 0.0,
+        "month_sin": -0.8660254037844386,
+        "month_cos": 0.5000000000000001,
+        "doy_sin": -0.9288394302558068,
+        "doy_cos": 0.3704825404820963,
+        "market_premium": -0.2052490614376592
+      },
+      "expected_log_change": {
+        "point": -0.004226779565215111,
+        "q10": -0.35091811418533325,
+        "q90": 0.3023020625114441
+      },
+      "expected_price": 11.949386596679688
+    },
+    {
+      "keys": {
+        "product": "Tomato",
+        "vgroup": "Common",
+        "State": "Karnataka",
+        "market_key": "nanjangud",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-09-28",
+      "features": {
+        "lag1": 3.729541435832826,
+        "lag2": 4.0163830207523885,
+        "med7": 3.670634915379174,
+        "med30": 3.729541435832826,
+        "med90": 3.729541435832826,
+        "vol30": 0.19560299731209363,
+        "n30": 15.0,
+        "days_since": 7.0,
+        "state_med30": 2.463626842578602,
+        "yoy": 2.70805020110221,
+        "yoy_missing": 0.0,
+        "month_sin": -1.0,
+        "month_cos": -1.8369701987210297e-16,
+        "doy_sin": -0.9987235240803972,
+        "doy_cos": -0.050510617185222886,
+        "market_premium": 0.9150762387756806
+      },
+      "expected_log_change": {
+        "point": -0.1625186949968338,
+        "q10": -0.6590256690979004,
+        "q90": 0.2634354829788208
+      },
+      "expected_price": 35.411006927490234
+    },
+    {
+      "keys": {
+        "product": "Tomato",
+        "vgroup": "Common",
+        "State": "Maharashtra",
+        "market_key": "nasik",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-11-22",
+      "features": {
+        "lag1": 1.3862943611198906,
+        "lag2": 2.169053700369523,
+        "med7": 1.6094379124341003,
+        "med30": 1.5040773967762742,
+        "med90": 2.1972245773362196,
+        "vol30": 0.24820192166782948,
+        "n30": 19.0,
+        "days_since": 7.0,
+        "state_med30": 1.9996734167999106,
+        "yoy": null,
+        "yoy_missing": 1.0,
+        "month_sin": -0.5000000000000004,
+        "month_cos": 0.8660254037844384,
+        "doy_sin": -0.6250496486104377,
+        "doy_cos": 0.7805849965070866,
+        "market_premium": -0.21020304003847512
+      },
+      "expected_log_change": {
+        "point": 0.25084441900253296,
+        "q10": -0.2124888300895691,
+        "q90": 0.6796817779541016
+      },
+      "expected_price": 5.140440940856934
+    },
+    {
+      "keys": {
+        "product": "Potato",
+        "vgroup": "Jalander",
+        "State": "Karnataka",
+        "market_key": "bangarpet",
+        "feature_level": "market+product"
+      },
+      "date": "2026-10-09",
+      "features": {
+        "lag1": 2.70805020110221,
+        "lag2": 2.995732273553991,
+        "med7": 2.995732273553991,
+        "med30": 2.70805020110221,
+        "med90": 2.70805020110221,
+        "vol30": 0.18749830742400972,
+        "n30": 24.0,
+        "days_since": 7.0,
+        "state_med30": null,
+        "yoy": 2.995732273553991,
+        "yoy_missing": 0.0,
+        "month_sin": -0.8660254037844386,
+        "month_cos": 0.5000000000000001,
+        "doy_sin": -0.9903973200352558,
+        "doy_cos": 0.1382503109109819,
+        "market_premium": 0.0
+      },
+      "expected_log_change": {
+        "point": 0.18291404843330383,
+        "q10": -0.28149184584617615,
+        "q90": 0.6926159858703613
+      },
+      "expected_price": 18.01066780090332
+    },
+    {
+      "keys": {
+        "product": "Onion",
+        "vgroup": "Red",
+        "State": "Maharashtra",
+        "market_key": "lasalgaonniphad",
+        "feature_level": "market+product"
+      },
+      "date": "2026-11-23",
+      "features": {
+        "lag1": 3.6635616461296463,
+        "lag2": 3.6375861597263857,
+        "med7": 3.6635616461296463,
+        "med30": 3.6888794541139363,
+        "med90": 3.7013019741124933,
+        "vol30": 0.02357203222886118,
+        "n30": 15.0,
+        "days_since": 7.0,
+        "state_med30": 3.7235654330929004,
+        "yoy": 2.565718292524414,
+        "yoy_missing": 0.0,
+        "month_sin": -0.5000000000000004,
+        "month_cos": 0.8660254037844384,
+        "doy_sin": -0.6115298757991053,
+        "doy_cos": 0.7912213413483807,
+        "market_premium": 0.05677799193231792
+      },
+      "expected_log_change": {
+        "point": -0.11388356983661652,
+        "q10": -0.380196750164032,
+        "q90": 0.19547736644744873
+      },
+      "expected_price": 34.8021125793457
+    },
+    {
+      "keys": {
+        "product": "Tomato",
+        "vgroup": "Common",
+        "State": "Maharashtra",
+        "market_key": "ghoti",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-09-24",
+      "features": {
+        "lag1": 2.970414465569701,
+        "lag2": 3.0204248861443626,
+        "med7": 2.983073369561846,
+        "med30": 2.970414465569701,
+        "med90": 2.970414465569701,
+        "vol30": 0.03530660491706541,
+        "n30": 11.0,
+        "days_since": 8.0,
+        "state_med30": 2.60638654732571,
+        "yoy": 2.5687881337687024,
+        "yoy_missing": 0.0,
+        "month_sin": -1.0,
+        "month_cos": -1.8369701987210297e-16,
+        "doy_sin": -0.9928872135356962,
+        "doy_cos": -0.11905873003404988,
+        "market_premium": 0.2156662588225864
+      },
+      "expected_log_change": {
+        "point": 0.019177338108420372,
+        "q10": -0.2221735119819641,
+        "q90": 0.16828525066375732
+      },
+      "expected_price": 19.877567291259766
+    },
+    {
+      "keys": {
+        "product": "Groundnut",
+        "vgroup": "Other",
+        "State": "Karnataka",
+        "market_key": "bengaluru",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-10-06",
+      "features": {
+        "lag1": 3.912023005428146,
+        "lag2": 3.912023005428146,
+        "med7": 3.912023005428146,
+        "med30": 3.912023005428146,
+        "med90": 3.912023005428146,
+        "vol30": 0.07090118531619523,
+        "n30": 17.0,
+        "days_since": 8.0,
+        "state_med30": 4.035882547368272,
+        "yoy": null,
+        "yoy_missing": 1.0,
+        "month_sin": -0.8660254037844386,
+        "month_cos": 0.5000000000000001,
+        "doy_sin": -0.9962102997023297,
+        "doy_cos": 0.0869772313136861,
+        "market_premium": -0.014122035223555152
+      },
+      "expected_log_change": {
+        "point": -0.006493024528026581,
+        "q10": -0.13061901926994324,
+        "q90": 0.06843148171901703
+      },
+      "expected_price": 49.67639923095703
+    },
+    {
+      "keys": {
+        "product": "Rice",
+        "vgroup": "1009 Kar",
+        "State": "Maharashtra",
+        "market_key": "sinner",
+        "feature_level": "state+product"
+      },
+      "date": "2026-10-05",
+      "features": {
+        "lag1": 4.007333185232471,
+        "lag2": 3.912023005428146,
+        "med7": 3.912023005428146,
+        "med30": 4.182050142641207,
+        "med90": 4.007333185232471,
+        "vol30": 0.17364479627607712,
+        "n30": 21.0,
+        "days_since": 7.0,
+        "state_med30": 3.204776900488699,
+        "yoy": 3.7954891891721947,
+        "yoy_missing": 0.0,
+        "month_sin": -0.8660254037844386,
+        "month_cos": 0.5000000000000001,
+        "doy_sin": -0.9975590477788613,
+        "doy_cos": 0.06982797572987089,
+        "market_premium": 0.0
+      },
+      "expected_log_change": {
+        "point": -0.263091504573822,
+        "q10": -0.6055078506469727,
+        "q90": 0.07535353302955627
+      },
+      "expected_price": 42.27693557739258
+    },
+    {
+      "keys": {
+        "product": "Rice",
+        "vgroup": "Jaya",
+        "State": "Karnataka",
+        "market_key": "mandya",
+        "feature_level": "state+product"
+      },
+      "date": "2026-09-05",
+      "features": {
+        "lag1": 3.8394523125933104,
+        "lag2": 3.871201010907891,
+        "med7": 3.730501128804756,
+        "med30": 3.725076120792723,
+        "med90": 3.6888794541139363,
+        "vol30": 0.2683583702618618,
+        "n30": 30.0,
+        "days_since": 7.0,
+        "state_med30": null,
+        "yoy": 2.8903717578961645,
+        "yoy_missing": 0.0,
+        "month_sin": -1.0,
+        "month_cos": -1.8369701987210297e-16,
+        "doy_sin": -0.9020987014301837,
+        "doy_cos": -0.43152975897147144,
+        "market_premium": 0.0
+      },
+      "expected_log_change": {
+        "point": -0.27694034576416016,
+        "q10": -0.9294787645339966,
+        "q90": 0.1296805739402771
+      },
+      "expected_price": 35.25163650512695
+    },
+    {
+      "keys": {
+        "product": "Broken rice",
+        "vgroup": "Broken Rice",
+        "State": "Karnataka",
+        "market_key": "hunsur",
+        "feature_level": "state+variety"
+      },
+      "date": "2026-09-28",
+      "features": {
+        "lag1": 3.295836866004329,
+        "lag2": 3.1135153092103742,
+        "med7": 3.2188758248682006,
+        "med30": 3.1793030497483774,
+        "med90": 3.1570004211501135,
+        "vol30": 0.1523753523627775,
+        "n30": 29.0,
+        "days_since": 7.0,
+        "state_med30": 3.1793030497483774,
+        "yoy": 3.2188758248682006,
+        "yoy_missing": 0.0,
+        "month_sin": -1.0,
+        "month_cos": -1.8369701987210297e-16,
+        "doy_sin": -0.9987235240803972,
+        "doy_cos": -0.050510617185222886,
+        "market_premium": 0.0
+      },
+      "expected_log_change": {
+        "point": -0.16556690633296967,
+        "q10": -0.7034890651702881,
+        "q90": 0.125326469540596
+      },
+      "expected_price": 22.88015365600586
+    },
+    {
+      "keys": {
+        "product": "Tomato",
+        "vgroup": "Common",
+        "State": "Karnataka",
+        "market_key": "belgaum",
+        "feature_level": "state+variety"
+      },
+      "date": "2026-09-01",
+      "features": {
+        "lag1": 2.1198634561787513,
+        "lag2": 2.1933281070570962,
+        "med7": 2.1933281070570962,
+        "med30": 2.302585092994046,
+        "med90": 2.5649493574615367,
+        "vol30": 0.14058009078108963,
+        "n30": 30.0,
+        "days_since": 7.0,
+        "state_med30": 2.302585092994046,
+        "yoy": 2.92133723676141,
+        "yoy_missing": 0.0,
+        "month_sin": -1.0,
+        "month_cos": -1.8369701987210297e-16,
+        "doy_sin": -0.8702939222685674,
+        "doy_cos": -0.49253272872205434,
+        "market_premium": 0.0
+      },
+      "expected_log_change": {
+        "point": -0.07089249044656754,
+        "q10": -0.8037109375,
+        "q90": 0.7964521646499634
+      },
+      "expected_price": 7.75991153717041
+    },
+    {
+      "keys": {
+        "product": "Rice",
+        "vgroup": "Dappa",
+        "State": "Karnataka",
+        "market_key": "krnagar",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-09-22",
+      "features": {
+        "lag1": 3.1780538303479458,
+        "lag2": 3.2188758248682006,
+        "med7": 3.198464827608073,
+        "med30": 3.2188758248682006,
+        "med90": 3.2188758248682006,
+        "vol30": 0.018256150944882733,
+        "n30": 5.0,
+        "days_since": 11.0,
+        "state_med30": 3.417726683613366,
+        "yoy": null,
+        "yoy_missing": 1.0,
+        "month_sin": -1.0,
+        "month_cos": -1.8369701987210297e-16,
+        "doy_sin": -0.9882042449941422,
+        "doy_cos": -0.15314166701312007,
+        "market_premium": 0.0
+      },
+      "expected_log_change": {
+        "point": 0.0,
+        "q10": -0.041522443294525146,
+        "q90": 0.1508035808801651
+      },
+      "expected_price": 24.0
+    },
+    {
+      "keys": {
+        "product": "Rice",
+        "vgroup": "Fine",
+        "State": "Karnataka",
+        "market_key": "bengaluru",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-09-09",
+      "features": {
+        "lag1": 4.174387269895637,
+        "lag2": 4.174387269895637,
+        "med7": 4.174387269895637,
+        "med30": 4.174387269895637,
+        "med90": 4.119037174812473,
+        "vol30": 0.0,
+        "n30": 23.0,
+        "days_since": 7.0,
+        "state_med30": 3.982015377248181,
+        "yoy": null,
+        "yoy_missing": 1.0,
+        "month_sin": -1.0,
+        "month_cos": -1.8369701987210297e-16,
+        "doy_sin": -0.9296339319682695,
+        "doy_cos": -0.3684843993077793,
+        "market_premium": 0.18565130073660074
+      },
+      "expected_log_change": {
+        "point": 0.0,
+        "q10": -0.023707598447799683,
+        "q90": 0.008202940225601196
+      },
+      "expected_price": 65.00001525878906
+    },
+    {
+      "keys": {
+        "product": "Onion",
+        "vgroup": "Red",
+        "State": "Maharashtra",
+        "market_key": "manmad",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-10-29",
+      "features": {
+        "lag1": 3.624874124138024,
+        "lag2": 3.629660094453965,
+        "med7": 3.624874124138024,
+        "med30": 3.624874124138024,
+        "med90": 3.624874124138024,
+        "vol30": 0.04529217768410165,
+        "n30": 5.0,
+        "days_since": 7.0,
+        "state_med30": 3.6109179126442243,
+        "yoy": null,
+        "yoy_missing": 1.0,
+        "month_sin": -0.8660254037844386,
+        "month_cos": 0.5000000000000001,
+        "doy_sin": -0.8857249183835637,
+        "doy_cos": 0.4642104791518923,
+        "market_premium": -0.014184634991956102
+      },
+      "expected_log_change": {
+        "point": -0.05944061279296875,
+        "q10": -0.355133980512619,
+        "q90": 0.14792011678218842
+      },
+      "expected_price": 35.35477828979492
+    },
+    {
+      "keys": {
+        "product": "Onion",
+        "vgroup": "Other",
+        "State": "Maharashtra",
+        "market_key": "sinner",
+        "feature_level": "market+variety"
+      },
+      "date": "2026-09-02",
+      "features": {
+        "lag1": 3.6635616461296463,
+        "lag2": 3.6888794541139363,
+        "med7": 3.6635616461296463,
+        "med30": 3.2188758248682006,
+        "med90": 2.995732273553991,
+        "vol30": 0.27106599209421517,
+        "n30": 21.0,
+        "days_since": 7.0,
+        "state_med30": 3.1986731175506815,
+        "yoy": null,
+        "yoy_missing": 1.0,
+        "month_sin": -1.0,
+        "month_cos": -1.8369701987210297e-16,
+        "doy_sin": -0.8786374941610001,
+        "doy_cos": -0.4774894280028391,
+        "market_premium": -0.03876273283842924
+      },
+      "expected_log_change": {
+        "point": -0.11170974373817444,
+        "q10": -0.2501819133758545,
+        "q90": 0.03249669075012207
+      },
+      "expected_price": 34.87784194946289
+    },
+    {
+      "keys": {
+        "product": "Onion",
+        "vgroup": "2Nd Sort",
+        "State": "Maharashtra",
+        "market_key": "kalyan",
+        "feature_level": "market+product"
+      },
+      "date": "2026-10-08",
+      "features": {
+        "lag1": 3.8066624897703196,
+        "lag2": 3.912023005428146,
+        "med7": 3.859342747599233,
+        "med30": 3.7727609380946383,
+        "med90": 3.4258899942525267,
+        "vol30": 0.13780370644135084,
+        "n30": 14.0,
+        "days_since": 7.0,
+        "state_med30": null,
+        "yoy": 2.2512917986064953,
+        "yoy_missing": 0.0,
+        "month_sin": -0.8660254037844386,
+        "month_cos": 0.5000000000000001,
+        "doy_sin": -0.9926289059345095,
+        "doy_cos": 0.121193461470736,
+        "market_premium": 0.0
+      },
+      "expected_log_change": {
+        "point": -0.24429400265216827,
+        "q10": -0.6877548098564148,
+        "q90": 0.12547674775123596
+      },
+      "expected_price": 35.246585845947266
+    },
+    {
+      "keys": {
+        "product": "Onion",
+        "vgroup": "2Nd Sort",
+        "State": "Maharashtra",
+        "market_key": "kalyan",
+        "feature_level": "market+product"
+      },
+      "date": "2026-10-11",
+      "features": {
+        "lag1": 3.8066624897703196,
+        "lag2": 3.8066624897703196,
+        "med7": 3.8066624897703196,
+        "med30": 3.789711713932479,
+        "med90": 3.49061902787097,
+        "vol30": 0.1393802432044308,
+        "n30": 12.0,
+        "days_since": 7.0,
+        "state_med30": null,
+        "yoy": 2.2512917986064953,
+        "yoy_missing": 0.0,
+        "month_sin": -0.8660254037844386,
+        "month_cos": 0.5000000000000001,
+        "doy_sin": -0.9850556718215013,
+        "doy_cos": 0.172236243027682,
+        "market_premium": 0.0
+      },
+      "expected_log_change": {
+        "point": -0.25305432081222534,
+        "q10": -0.7737170457839966,
+        "q90": 0.04627826809883118
+      },
+      "expected_price": 34.93915557861328
+    }
+  ]
+}
