@@ -113,7 +113,23 @@ def asof_join(left: pd.DataFrame, stats: pd.DataFrame, keys: list[str], on: str,
                          tolerance=tolerance)
 
 
-def build_features(rows: pd.DataFrame, targets: pd.DataFrame, premiums: dict) -> pd.DataFrame:
+def premium_stats(rows: pd.DataFrame) -> pd.DataFrame:
+    """Market premium = median over the previous 365 days of log(market price / state price), same product,
+    variety group and date. Computed per observation date, so it is as-of like every other feature."""
+    m = daily(rows, SERIES).merge(daily(rows, LEVELS["state+variety"]), on=LEVELS["state+variety"] + ["date"],
+                                  suffixes=("", "_state"))
+    m["diff"] = m["lp"] - m["lp_state"]
+    out = []
+    for _, g in m.sort_values(SERIES + ["date"]).groupby(SERIES, sort=False):
+        x = g.set_index("date")["diff"]
+        r = g[SERIES + ["date"]].copy()
+        r["premium"] = x.rolling("365D").median().values
+        r["premium_n"] = x.rolling("365D").count().values
+        out.append(r)
+    return pd.concat(out, ignore_index=True).rename(columns={"date": "obs_date"})
+
+
+def build_features(rows: pd.DataFrame, targets: pd.DataFrame) -> pd.DataFrame:
     """Features for `targets` (SERIES keys + date) computed from `rows` (cleaned, vgroup assigned)."""
     t = targets.copy()
     t["as_of"] = t["date"] - pd.Timedelta(days=H)
@@ -143,19 +159,9 @@ def build_features(rows: pd.DataFrame, targets: pd.DataFrame, premiums: dict) ->
     month, doy = f["date"].dt.month, f["date"].dt.dayofyear
     f["month_sin"], f["month_cos"] = np.sin(2 * np.pi * month / 12), np.cos(2 * np.pi * month / 12)
     f["doy_sin"], f["doy_cos"] = np.sin(2 * np.pi * doy / 365.25), np.cos(2 * np.pi * doy / 365.25)
-    f["market_premium"] = [premiums.get("|".join(k), 0.0) for k in f[SERIES].itertuples(index=False)]
+    pm = asof_join(f.reset_index()[["rid", "as_of"] + SERIES], premium_stats(rows), SERIES, "as_of").set_index("rid")
+    f["market_premium"] = pm["premium"].where(pm["premium_n"] >= PREMIUM_MIN_DAYS).reindex(f.index).fillna(0.0)
     return f.reset_index(drop=True)
-
-
-def fit_market_premiums(rows: pd.DataFrame, train_end: pd.Timestamp) -> dict:
-    """log(market price / state price) for the same product, variety group and date, training window only."""
-    tr = rows[rows["date"] <= train_end]
-    m = daily(tr, SERIES).merge(daily(tr, LEVELS["state+variety"]), on=LEVELS["state+variety"] + ["date"],
-                                suffixes=("", "_state"))
-    m["diff"] = m["lp"] - m["lp_state"]
-    agg = m.groupby(SERIES)["diff"].agg(["median", "size"])
-    agg = agg[agg["size"] >= PREMIUM_MIN_DAYS]
-    return {"|".join(k): round(float(v), 6) for k, v in agg["median"].items()}
 
 
 def flag_spikes(series: pd.DataFrame) -> pd.Series:
@@ -169,15 +175,15 @@ def flag_spikes(series: pd.DataFrame) -> pd.Series:
 
 
 # ---------------------------------------------------------------- leakage checks
-def leakage_check(rows, targets, premiums, built, n=150, seed=7) -> dict:
-    """Recompute features for sampled targets from raw rows truncated at t - H; they must be identical."""
-    sample = targets.sample(n=min(n, len(targets)), random_state=seed)
+def leakage_check(rows, built, per_stratum=12, seed=7) -> dict:
+    """Recompute features for sampled targets from raw rows truncated at t - H; they must be identical.
+    The sample is stratified by split and feature level so test rows and every fallback path are covered."""
+    sample = (built.groupby(["split", "feature_level"], group_keys=False)
+              .apply(lambda g: g.sample(n=min(per_stratum, len(g)), random_state=seed)))
     worst, mismatches = 0.0, 0
     for _, tr in sample.iterrows():
         cut = rows[(rows["product"] == tr["product"]) & (rows["date"] <= tr["date"] - pd.Timedelta(days=H))]
-        if cut.empty:
-            continue
-        one = build_features(cut, pd.DataFrame([tr[SERIES + ["date"]]]), premiums).iloc[0]
+        one = build_features(cut, pd.DataFrame([tr[SERIES + ["date"]]])).iloc[0]
         full = built[(built[SERIES] == tr[SERIES]).all(axis=1) & (built["date"] == tr["date"])].iloc[0]
         for c in NUMERIC:
             a, b = one[c], full[c]
@@ -188,7 +194,10 @@ def leakage_check(rows, targets, premiums, built, n=150, seed=7) -> dict:
                 worst = max(worst, float("inf") if pd.isna(a) != pd.isna(b) else abs(float(a) - float(b)))
         if one["feature_level"] != full["feature_level"]:
             mismatches += 1
-    return {"sampled targets": len(sample), "mismatched values": mismatches, "max abs difference": worst}
+    strata = sample.groupby(["split", "feature_level"]).size()
+    return {"sampled targets": len(sample),
+            "strata (split / level: n)": "; ".join(f"{s} / {l}: {n}" for (s, l), n in strata.items()),
+            "mismatched values": mismatches, "max abs difference": worst}
 
 
 def boundary_check() -> dict:
@@ -201,10 +210,14 @@ def boundary_check() -> dict:
                                 dict(base, date=t0 - pd.Timedelta(days=6), price=999.0),
                                 dict(base, date=t0, price=50.0)])
     f = build_features(rows, pd.DataFrame([dict(product="Tomato", vgroup="Common", State="Karnataka",
-                                                 market_key="m", date=t0)]), {}).iloc[0]
-    return {"t-7 observation used as lag1": bool(np.isclose(f["lag1"], np.log(20.0))),
-            "t-6 and t observations ignored": bool(f["med90"] < np.log(999.0) and f["lag1"] < np.log(50.0)),
-            "days_since == 7": int(f["days_since"]) == 7}
+                                                 market_key="m", date=t0)])).iloc[0]
+    # History at t-30, t-27, ..., t-9 (eight values of 10) plus t-7 (20). If t-6 (999) leaked in,
+    # n30 would be 10 and lag1 would be log(999).
+    return {"t-7 observation used as lag1 = log 20": bool(np.isclose(f["lag1"], np.log(20.0))),
+            "lag2 = log 10 (the t-9 value)": bool(np.isclose(f["lag2"], np.log(10.0))),
+            "n30 = 9 (t-6 and t excluded)": int(f["n30"]) == 9,
+            "med7 = log 10 (values at t-12, t-9, t-7)": bool(np.isclose(f["med7"], np.log(10.0))),
+            "days_since = 7": int(f["days_since"]) == 7}
 
 
 # ---------------------------------------------------------------- main
@@ -217,7 +230,6 @@ def main():
 
     groups = fit_variety_groups(rows[rows["date"] <= train_end])
     rows["vgroup"] = assign_vgroup(rows, groups)
-    premiums = fit_market_premiums(rows, train_end)
 
     series = daily(rows, SERIES)
     series["spike"] = flag_spikes(series)
@@ -227,7 +239,7 @@ def main():
         targets.loc[targets["date"].between(a, b), "split"] = name
     targets = targets[targets["split"].notna()].reset_index(drop=True)
 
-    built = build_features(rows, targets[SERIES + ["date"]], premiums)
+    built = build_features(rows, targets[SERIES + ["date"]])
     built = built.merge(targets[SERIES + ["date", "lp", "price", "spike", "split"]], on=SERIES + ["date"])
     no_history = built["feature_level"].isna()
     dataset = built[~no_history].rename(columns={"lp": "target_log_price", "price": "target_price"})
@@ -235,7 +247,7 @@ def main():
     (ML / "data").mkdir(exist_ok=True)
     dataset.to_pickle(ML / "data" / "dataset.pkl")
 
-    leak = leakage_check(rows, targets[SERIES + ["date"]].merge(dataset[SERIES + ["date"]]), premiums, dataset)
+    leak = leakage_check(rows, dataset)
     bound = boundary_check()
 
     (ML / "artifacts").mkdir(exist_ok=True)
@@ -244,7 +256,8 @@ def main():
         "splits": {k: [str(a.date()), str(b.date())] for k, (a, b) in splits.items()},
         "levels": LEVELS, "usable_staleness_days": USABLE_STALENESS, "min_n30": MIN_N30,
         "variety_groups": groups, "variety_min_rows": VARIETY_MIN_ROWS,
-        "market_premiums": premiums, "numeric_features": NUMERIC, "categorical_features": CATEGORICAL,
+        "market_premium": {"window_days": 365, "min_days": PREMIUM_MIN_DAYS, "as_of": "t - horizon"},
+        "numeric_features": NUMERIC, "categorical_features": CATEGORICAL,
     }, indent=2), encoding="utf-8")
 
     # ---- report
@@ -276,7 +289,27 @@ def main():
                     ["split"] + list(lv.columns)))
     md.append("## Feature missingness (all splits)\n")
     md.append(table([{"feature": c, "missing": f"{dataset[c].isna().mean():.1%}"} for c in NUMERIC], ["feature", "missing"]))
-    md.append(f"Market premiums fitted on training data: {len(premiums)} series (unseen markets get 0, i.e. the state price).\n")
+    md.append("`market_premium` is the median log(market / state price) over the 365 days before t - h "
+              f"(0 when fewer than {PREMIUM_MIN_DAYS} matched days), so it is covered by the leakage check below.\n")
+    md.append("## Target price range (Rs/kg)\n")
+    md.append(table([{"product": p, "split": s, "min": f"{g['target_price'].min():.2f}",
+                      "median": f"{g['target_price'].median():.2f}", "max": f"{g['target_price'].max():.2f}"}
+                     for (p, s), g in dataset.groupby(["product", "split"])], ["product", "split", "min", "median", "max"]))
+    md.append("## Where calibration and test rows come from (rows per state)\n")
+    st = dataset[dataset["split"] != "train"].groupby(["product", "split", "State"]).size().unstack(fill_value=0)
+    md.append(table([{"product": p, "split": s, **{c: int(st.loc[(p, s), c]) for c in st.columns}} for p, s in st.index],
+                    ["product", "split"] + list(st.columns)))
+    flagged = dataset[(dataset["split"] != "train") & dataset["spike"]].merge(
+        series[SERIES + ["date"]].assign(prev_med30=lambda s: np.nan), how="left", on=SERIES + ["date"])
+    md.append(f"## Spike-flagged calibration and test rows ({len(flagged)})\n")
+    md.append("Kept in the data. `lag1` is the last price known at t - h, for comparison.\n")
+    md.append(table([{"product": r["product"], "state": r["State"], "market": r["market_key"], "variety": r["vgroup"],
+                      "date": r["date"].date(), "split": r["split"], "price": f"{r['target_price']:.2f}",
+                      "last known (t-h)": f"{np.exp(r['lag1']):.2f}", "ratio": f"{r['target_price'] / np.exp(r['lag1']):.1f}x"}
+                     for _, r in flagged.sort_values(["product", "date"]).iterrows()],
+                    ["product", "state", "market", "variety", "date", "split", "price", "last known (t-h)", "ratio"]))
+    md.append("**Thin products.** Broken rice and Groundnut have only about 130 calibration and 130 test rows each, "
+              "spread over about a dozen series, so their accuracy and coverage numbers will be noisy.\n")
     md.append("## Leakage checks\n")
     md.append("**Recompute from truncated data.** For sampled targets, the raw rows were cut at t - h *before* any "
               "step (daily aggregation, rolling windows, fallback choice), and the features were rebuilt and compared.\n")

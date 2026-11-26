@@ -46,7 +46,7 @@ Go/no-go is judged on the last 3 years (2023-11-25 to 2026-11-25). A series pass
 | crop | rows | first | last | best state series | obs days | max gap incl. tail | passing state series | passing market series | products passing | verdict |
 |---|---|---|---|---|---|---|---|---|---|---|
 | Tomato | 77956 | 2002-03-14 | 2026-11-25 | Tomato / Karnataka | 1061 | 7 | 2 | 12 | Tomato | pass |
-| Onion | 103445 | 2002-03-13 | 2026-11-25 | Onion / Karnataka | 1027 | 8 | 2 | 16 | Onion | pass |
+| Onion | 103445 | 2002-03-13 | 2026-11-25 | Onion / Karnataka | 1027 | 8 | 2 | 17 | Onion | pass |
 | Potato | 40561 | 2002-03-13 | 2026-11-25 | Potato / Karnataka | 1033 | 7 | 2 | 4 | Potato | pass |
 | Rice | 61328 | 2002-03-14 | 2026-11-25 | Rice / Maharashtra | 932 | 81 | 2 | 0 | Broken rice, Rice | pass |
 | Ragi | 20921 | 2002-03-14 | 2025-10-21 | Ragi / Karnataka | 351 | 400 | 0 | 0 | none | **fail** |
@@ -186,7 +186,7 @@ Go/no-go is judged on the last 3 years (2023-11-25 to 2026-11-25). A series pass
 | bangarpet | Bangarpet (2002-04-03 - 2025-11-04); Bangarpet APMC (2025-11-01 - 2026-11-25) |
 | belur | Belur (2002-05-02 - 2025-02-13); Belur APMC (2026-01-21 - 2026-11-24) |
 | binnymillbengaluru | Binny Mill (F&V), Bengaluru APMC (2026-04-01 - 2026-07-21); Binny Mill (FF&V) Bengaluru APMC (2026-06-01 - 2026-11-25) |
-| chandvad | Chandvad (2003-01-30 - 2025-11-03); Chandvad APMC (2025-11-01 - 2026-06-24) |
+| chandwad | Chandvad (2003-01-30 - 2025-11-03); Chandvad APMC (2025-11-01 - 2026-06-24); AGRICULTURE PRODUCE MARKET COMITEE CHANDWAD (2026-05-02 - 2026-09-02); APMC Chandwad (2026-08-03 - 2026-11-25) |
 | channarayapatna | Channarayapatna (2002-04-12 - 2025-11-03); Channarayapatna APMC (2025-11-01 - 2026-11-24) |
 | chickkaballapura | Chickkaballapura (2002-04-03 - 2025-11-03); Chickkaballapura APMC (2025-11-01 - 2026-11-24) |
 | chikkamagalore | Chikkamagalore (2002-04-07 - 2025-11-03); Chikkamagalore APMC (2025-11-03 - 2026-05-28) |
