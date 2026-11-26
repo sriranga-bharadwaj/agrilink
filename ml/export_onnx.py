@@ -106,7 +106,16 @@ def main():
                    "dtype": "categorical as string [n,1], numeric as float32 [n,1]"},
         "models": {"point": "price_point.onnx", "q10": "price_q10.onnx", "q90": "price_q90.onnx"},
         "interval": {"alpha": P2["alpha"], "cqr_log_correction": P2["cqr_log_correction"]},
-        "serving_choice": {p: c["serve"] for p, c in P2["serving_choice"].items()},
+        "suggested_price": {
+            "rule": "show a simple baseline as the suggested price and the model's CQR 80% range around the "
+                    "actual price; per product the baseline is whichever of last known price / 30-day median "
+                    "had the lower MAE on the calibration block",
+            "decided": "by the user after the test block was scored (the model did not beat the baselines), "
+                       "so the test score of this mix is not an unbiased estimate",
+            "baseline": {p: min(["persistence", "median30"], key=lambda b: c["calibration_mae"][b])
+                         for p, c in P2["serving_choice"].items()},
+            "baseline_features": {"persistence": "lag1", "median30": "med30"},
+        },
         "onnx_vs_sklearn_max_abs_diff": report,
         "parity_examples": examples,
     }, indent=2, default=str), encoding="utf-8")

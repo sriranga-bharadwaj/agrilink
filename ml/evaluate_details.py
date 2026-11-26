@@ -66,6 +66,24 @@ def main():
     md.append(table(cov, ["product", "shown point", "point outside range", "actual price inside range",
                           "median range width (% of shown point)"]))
 
+    # The serving rule the user chose after seeing the test results.
+    pick = {p: min(["persistence", "median30"], key=lambda b: c["calibration_mae"][b]) for p, c in choice.items()}
+    shown = np.array([preds[pick[p]][i] for i, p in enumerate(test["product"])])
+    md.append("## Serving decision (user, after the test block was scored)\n")
+    md.append("The app shows a **simple baseline as the suggested price** and the **model's CQR 80% range**. Per "
+              "product the baseline is whichever of last known price / 30-day median scored better on the "
+              "calibration block. Because the decision came after seeing the test results, the test numbers "
+              "below describe this choice but are **not an unbiased estimate** of it.\n")
+    rows = []
+    for name, idx in [("All products", test.index)] + sorted(test.groupby("product").groups.items()):
+        rows.append({"products": name,
+                     "baseline shown": "per product" if name == "All products" else LABELS[pick[name]],
+                     "test MAE Rs/kg": f"{np.mean(np.abs(np.exp(shown[idx]) - y[idx])):.2f}",
+                     "shown point outside range": f"{np.mean((shown[idx] < lo[idx]) | (shown[idx] > hi[idx])):.1%}",
+                     "actual price inside range": f"{np.mean((y_log[idx] >= lo[idx]) & (y_log[idx] <= hi[idx])):.0%}"})
+    md.append(table(rows, ["products", "baseline shown", "test MAE Rs/kg", "shown point outside range",
+                           "actual price inside range"]))
+
     md.append("## Caveats\n")
     md += ["- **Thin products.** Broken rice (12 series) and Groundnut (13 series) verdicts are indicative only: "
            "a bootstrap over so few series tends to give intervals that are too narrow.",

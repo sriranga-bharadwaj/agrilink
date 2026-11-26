@@ -42,6 +42,20 @@ The 80% range is for the actual price, so it stays valid whichever point is show
 | Rice | Gradient boosting (ours) | 0.2% | 78% | 34% |
 | Tomato | Gradient boosting (ours) | 0.0% | 78% | 70% |
 
+## Serving decision (user, after the test block was scored)
+
+The app shows a **simple baseline as the suggested price** and the **model's CQR 80% range**. Per product the baseline is whichever of last known price / 30-day median scored better on the calibration block. Because the decision came after seeing the test results, the test numbers below describe this choice but are **not an unbiased estimate** of it.
+
+| products | baseline shown | test MAE Rs/kg | shown point outside range | actual price inside range |
+|---|---|---|---|---|
+| All products | per product | 4.16 | 2.0% | 83% |
+| Broken rice | 30-day median | 2.12 | 0.0% | 92% |
+| Groundnut | 30-day median | 7.19 | 2.9% | 76% |
+| Onion | Last known price | 3.85 | 0.9% | 88% |
+| Potato | 30-day median | 2.05 | 5.7% | 84% |
+| Rice | 30-day median | 7.29 | 4.2% | 78% |
+| Tomato | Last known price | 3.68 | 0.2% | 78% |
+
 ## Caveats
 
 - **Thin products.** Broken rice (12 series) and Groundnut (13 series) verdicts are indicative only: a bootstrap over so few series tends to give intervals that are too narrow.

@@ -137,13 +137,21 @@
       "Tomato": 0.021667508546741487
     }
   },
-  "serving_choice": {
-    "Broken rice": "median30",
-    "Groundnut": "model",
-    "Onion": "model",
-    "Potato": "model",
-    "Rice": "model",
-    "Tomato": "model"
+  "suggested_price": {
+    "rule": "show a simple baseline as the suggested price and the model's CQR 80% range around the actual price; per product the baseline is whichever of last known price / 30-day median had the lower MAE on the calibration block",
+    "decided": "by the user after the test block was scored (the model did not beat the baselines), so the test score of this mix is not an unbiased estimate",
+    "baseline": {
+      "Broken rice": "median30",
+      "Groundnut": "median30",
+      "Onion": "persistence",
+      "Potato": "median30",
+      "Rice": "median30",
+      "Tomato": "persistence"
+    },
+    "baseline_features": {
+      "persistence": "lag1",
+      "median30": "med30"
+    }
   },
   "onnx_vs_sklearn_max_abs_diff": {
     "point": {
