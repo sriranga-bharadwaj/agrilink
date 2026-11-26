@@ -2,7 +2,7 @@
 USE agrilink;
 
 SET FOREIGN_KEY_CHECKS = 0;
-DROP TABLE IF EXISTS reviews, deliveries, order_status_history, orders,
+DROP TABLE IF EXISTS mandi_prices, reviews, deliveries, order_status_history, orders,
                      matches, requirements, listings, crops, buyers, farmers, users;
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -186,3 +186,27 @@ CREATE TABLE reviews (
   CONSTRAINT uq_review UNIQUE (order_id, reviewer_id),  -- buyer and farmer may each review once
   CONSTRAINT chk_review_rating CHECK (rating BETWEEN 1 AND 5)
 );
+
+-- ---------------------------------------------------------------------------
+-- Government wholesale (mandi) prices used for price suggestions.
+-- Cleaned Agmarknet rows (data.gov.in, Open Government Data License - India),
+-- loaded from web/data/mandi_prices.csv by web/scripts/mysql/load-mandi-prices.mjs.
+-- One row per original report; several rows can share a market and day
+-- (different grades or varieties within one variety group).
+-- ---------------------------------------------------------------------------
+CREATE TABLE mandi_prices (
+  mandi_price_id  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  crop_id         SMALLINT UNSIGNED NOT NULL,
+  product         VARCHAR(40)  NOT NULL,     -- e.g. Rice vs Broken rice: never mixed in one series
+  variety_group   VARCHAR(40)  NOT NULL,
+  state           VARCHAR(80)  NOT NULL,
+  district        VARCHAR(80)  NOT NULL,
+  market_key      VARCHAR(120) NOT NULL,     -- normalised: survives the late-2025 "<name> APMC" renames
+  market          VARCHAR(160) NOT NULL,
+  price_date      DATE NOT NULL,
+  price_per_kg    DECIMAL(12,6) NOT NULL,
+  CONSTRAINT fk_mandi_crop FOREIGN KEY (crop_id) REFERENCES crops(crop_id),
+  CONSTRAINT chk_mandi_price CHECK (price_per_kg > 0)
+);
+CREATE INDEX idx_mandi_product_state ON mandi_prices (product, state, price_date);
+CREATE INDEX idx_mandi_district ON mandi_prices (product, district, price_date);

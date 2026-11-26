@@ -12,7 +12,8 @@
     "test:local": "node --env-file=.env.local --test --test-concurrency=1 \"tests/**/*.test.mjs\"",
     "mongo:setup": "node --env-file=.env.local scripts/mongodb/setup.mjs",
     "mongo:seed": "node --env-file=.env.local scripts/mongodb/seed.mjs",
-    "mongo:demo": "node --env-file=.env.local scripts/mongodb/demo.mjs"
+    "mongo:demo": "node --env-file=.env.local scripts/mongodb/demo.mjs",
+    "mandi:load": "node --env-file=.env.local scripts/mysql/load-mandi-prices.mjs"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.3.2",
@@ -20,6 +21,7 @@
     "mongodb": "^7.8.0",
     "mysql2": "^3.24.6",
     "next": "15.5.28",
+    "onnxruntime-node": "1.30.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "server-only": "^0.0.1"

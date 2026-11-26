@@ -38,15 +38,23 @@ services:
       timeout: 5s
       retries: 30
 
-  mongo-seed:
+  # One-shot loader: MongoDB sample data and the mandi price table, each only if empty.
+  seed:
     image: agrilink-web   # built by the web service
     pull_policy: never
-    command: ["node", "scripts/mongodb/init-once.mjs"]
+    command: ["sh", "-c", "node scripts/mongodb/init-once.mjs && node scripts/mysql/load-mandi-prices.mjs"]
     environment:
       MONGODB_URI: mongodb://mongo:27017
       MONGODB_DB: agrilink
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: agrilink
+      DB_PASSWORD: agrilink_dev
+      DB_NAME: agrilink
     depends_on:
       mongo:
+        condition: service_healthy
+      mysql:
         condition: service_healthy
     restart: "no"
 
@@ -70,7 +78,7 @@ services:
         condition: service_healthy
       mongo:
         condition: service_healthy
-      mongo-seed:
+      seed:
         condition: service_completed_successfully
 
 volumes:

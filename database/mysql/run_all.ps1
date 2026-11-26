@@ -18,8 +18,13 @@ if ($args -contains "-demo") {
     Get-Content -Raw (Join-Path $dir "06_demo.sql") | & $mysql -u agrilink --force --table agrilink
 }
 
+$web = Join-Path $dir "..\..\web"
+
+# Government mandi prices for price suggestions (01_schema.sql recreated the empty table).
+Write-Host "== mandi_prices"
+npm --prefix $web run --silent mandi:load
+
 # MongoDB quality documents are keyed by the same listing/requirement ids.
 Write-Host "== MongoDB setup + seed"
-$web = Join-Path $dir "..\..\web"
 npm --prefix $web run --silent mongo:setup
 npm --prefix $web run --silent mongo:seed
