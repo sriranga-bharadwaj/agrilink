@@ -11,6 +11,12 @@ next-env.d.ts
 .env*
 !.env.example
 
+# ML: Python env and raw downloads (only the cleaned dataset is committed)
+ml/.venv/
+__pycache__/
+ml/data/*
+!ml/data/mandi_prices.csv
+
 # logs and OS files
 npm-debug.log*
 .DS_Store
