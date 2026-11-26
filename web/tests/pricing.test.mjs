@@ -91,6 +91,43 @@ describe("price suggestion", () => {
     assert.equal(s.coverage, 0.8);
   });
 
+  it("ignores prices newer than t - 7 (leakage guard on the live MySQL path)", async () => {
+    const input = { crop: "Tomato", variety: "", state: "Karnataka", district: "Kolar" };
+    const date = "2026-11-25";
+    const before = await suggest(input, date);
+    const db = await connectMysql();
+    let inserted = [];
+    try {
+      // Absurd prices for the same series, dated after t - 7: they must not move anything.
+      for (const day of ["2026-11-19", "2026-11-22", "2026-11-25"]) {
+        const [res] = await db.query(
+          `INSERT INTO mandi_prices (crop_id, product, variety_group, state, district, market_key, market, price_date, price_per_kg)
+           SELECT crop_id, 'Tomato', 'Common', 'Karnataka', 'Kolar', 'kolar', 'Kolar APMC', ?, 999 FROM crops WHERE crop_name = 'Tomato'`,
+          [day]);
+        inserted.push(res.insertId);
+      }
+      const after = await suggest(input, date);
+      assert.deepEqual(after, before);
+    } finally {
+      if (inserted.length) await db.query("DELETE FROM mandi_prices WHERE mandi_price_id IN (?)", [inserted]);
+      await db.end();
+    }
+  });
+
+  it("feature builder never reads a row dated after t - 7", () => {
+    const ex = spec.parity_examples[0];
+    const k = ex.keys;
+    const key = { product: k.product, vgroup: k.vgroup, state: k.State, market_key: k.market_key };
+    const asOf = new Date(Date.parse(`${ex.date}T00:00:00Z`) - spec.horizon_days * 86_400_000).toISOString().slice(0, 10);
+    const future = ["2099-01-01", ex.date].map((d) => ({ product: k.product, variety_group: k.vgroup, state: k.State,
+      market_key: k.market_key, price_date: d, price: 1e6 }));
+    const dayAfter = new Date(Date.parse(`${asOf}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+    future.push({ ...future[0], price_date: dayAfter });
+    const a = computeFeatures(rows, spec, key, ex.date);
+    const b = computeFeatures([...rows, ...future], spec, key, ex.date);
+    assert.deepEqual(b, a);
+  });
+
   it("is honest about crops without enough market data", async () => {
     const s = await suggest({ crop: "Grapes", variety: "", state: "Maharashtra", district: "Nashik" }, "2026-11-25");
     assert.equal(s.ok, false);

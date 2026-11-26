@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useRef, useState } from "react";
 import { createListing, suggestPrice, type PriceSuggestionState } from "@/app/actions/listings";
 import { AttributeInputs } from "@/components/AttributeInputs";
 import type { CropSpec } from "@/lib/quality";
@@ -48,12 +48,15 @@ export function ListingForm({ crops, specs, today }: { crops: Crop[]; specs: Cro
   const [state, formAction, pending] = useActionState(createListing, null);
   const [suggestion, suggestAction, suggesting] = useActionState(suggestPrice, null);
   const [price, setPrice] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
+  // Called directly (not as a form submission), so React does not reset the fields the farmer has filled in.
+  const requestSuggestion = () => startTransition(() => suggestAction(new FormData(formRef.current!)));
   const [cropId, setCropId] = useState(crops[0]?.crop_id);
   const cropName = crops.find((c) => c.crop_id === cropId)?.crop_name;
   const spec = specs.find((s) => s.crop === cropName);
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form ref={formRef} action={formAction} className="space-y-6">
       <section className="space-y-4">
         <h2 className="font-semibold">Produce</h2>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -76,7 +79,7 @@ export function ListingForm({ crops, specs, today }: { crops: Crop[]; specs: Cro
             <div className="flex gap-2">
               <input className="input" id="price_per_kg" name="price_per_kg" type="number" min="0.01" step="0.01"
                 required value={price} onChange={(e) => setPrice(e.target.value)} />
-              <button className="btn-outline whitespace-nowrap" formAction={suggestAction} formNoValidate disabled={suggesting}>
+              <button type="button" className="btn-outline whitespace-nowrap" onClick={requestSuggestion} disabled={suggesting}>
                 {suggesting ? "Checking…" : "Suggest a price"}
               </button>
             </div>

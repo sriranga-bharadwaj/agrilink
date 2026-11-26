@@ -24,6 +24,7 @@ The matching, ordering and business rules live in the database: MySQL stored pro
   - reviews allowed only after delivery
 - **Semantic search.** "potatoes for making chips" finds the Kufri Chipsona listing. Text is embedded locally with all-MiniLM-L6-v2 (384 dimensions), and cosine similarity is computed inside a MongoDB aggregation pipeline. No API key is needed.
 - **Dashboards from SQL views.** These cover farmer earnings, buyer spend, and supply vs demand per crop.
+- **Price suggestion from government market data.** A farmer gets a suggested price plus a calibrated 80% range, based on Agmarknet mandi prices for their own district, with honestly reported accuracy. See [AI price suggestion](#ai-price-suggestion).
 
 ## Tech stack
 
@@ -72,6 +73,7 @@ The sample data has 6 farmers, 4 buyers, 10 crops, 14 listings and 6 requirement
 1. Log in as the buyer → **Tomato** requirement → see the ranked matches.
 2. Order 1,500 kg from #1, then try 800 kg more. The second order is refused with "Only 500.00 kg available" and nothing is changed.
 3. Log in as `ramesh@agrilink.test` → Confirm → Mark shipped → Mark delivered.
+4. Still as Ramesh: **+ New listing** → Tomato → **Suggest a price**.
 
 ## Running without Docker
 
@@ -95,7 +97,7 @@ Requires MySQL 8, MongoDB and Node.js 24.
 
 | File | Contents |
 |---|---|
-| `01_schema.sql` | 11 tables with primary/foreign keys, UNIQUE and CHECK constraints, ENUMs, a stored generated column, and indexes |
+| `01_schema.sql` | 11 marketplace tables plus `mandi_prices` (government prices for suggestions), with primary/foreign keys, UNIQUE and CHECK constraints, ENUMs, a stored generated column, and indexes |
 | `02_functions_triggers.sql` | `fn_grade_rank`, `fn_distance_km` (`ST_Distance_Sphere`), and 6 triggers |
 | `03_procedures.sql` | `sp_find_matches`, `sp_place_order`, `sp_expire_stale`, and the daily event `ev_expire_stale` |
 | `04_views.sql` | 6 reporting views |
@@ -111,13 +113,15 @@ Requires MySQL 8, MongoDB and Node.js 24.
 
 ## Automated tests
 
-There are 31 tests, built on Node's built-in test runner:
+There are 43 tests, built on Node's built-in test runner:
 
 | File | Tests | What it covers |
 |---|---|---|
 | [`mysql.test.mjs`](web/tests/mysql.test.mjs) | 16 | Matching filters and ranking. Ordering: stock, price copy, generated total, oversell and rollback, requirement fill, ownership and crop checks. All lifecycle triggers: illegal jumps, immutable quantity, delivery tracking, audit history, stock returned on cancel. Review rules, CHECK constraints and the expiry procedure. |
 | [`mongo.test.mjs`](web/tests/mongo.test.mjs) | 6 | `$jsonSchema` rejections, the unique link to MySQL, wildcard-index use, the buyer quality-spec filter, cosine similarity, and a semantic-search query |
 | [`quality.test.mjs`](web/tests/quality.test.mjs) | 9 | Quality-constraint logic and form parsing |
+| [`pricing.test.mjs`](web/tests/pricing.test.mjs) | 7 | Price suggestion. **Parity:** the TypeScript features from the CSV and from MySQL match Python to 1e-9, and ONNX in Node matches the exported predictions. **Leakage guards:** prices dated after *t − 7* never change a suggestion, on the live SQL path or in the feature builder. Also a Kolar tomato suggestion, and the message for crops without data. |
+| [`price-adjust.test.mjs`](web/tests/price-adjust.test.mjs) | 5 | Listing rules (grade, organic, freshness, demand) and range scaling |
 
 Each database test creates its own rows and deletes them afterwards, so the suite can run repeatedly against the sample data. Every "blocked" case also checks that nothing changed.
 
@@ -129,6 +133,55 @@ docker compose -p agrilink-test down -v
 Without Docker, run `npm run test:local` in `web/` against the databases built by `run_all.ps1`.
 
 GitHub Actions ([`ci.yml`](.github/workflows/ci.yml)) runs the same two commands on every push and pull request. The image build also lints and type-checks the app.
+
+## AI price suggestion
+
+On **New listing**, **Suggest a price** gives the farmer a price and an 80% range based on real government wholesale prices for their district.
+
+![Price suggestion on the New listing form](docs/screenshots/06-price-suggestion.png)
+
+### How it works
+
+**Data:**
+- Agmarknet daily mandi prices from [data.gov.in](https://data.gov.in/resource/variety-wise-daily-market-prices-data-commodity).
+- About 1.5 million rows, 2002 to November 2026, from 11 districts in Karnataka and Maharashtra.
+- A coverage gate decided which crops have enough continuous history: **Tomato, Onion, Potato, Rice (and Broken rice) and Groundnut** pass.
+- Ragi, Banana, Grapes, Turmeric and Toor Dal don't, and the app says so instead of guessing.
+
+**Model:**
+- Gradient boosting forecasts the mandi price **7 days ahead**, using only prices dated on or before *t − 7*.
+- It is trained on 2015 – May 2026, with a separate calibration block and a test block (Aug–Nov 2026) scored once.
+- Ranges come from 10%/90% quantile models conformalized on the calibration block (CQR).
+
+**Serving:**
+- Python exports the models to ONNX, and Next.js runs them with `onnxruntime-node`.
+- The features are recomputed live from the `mandi_prices` table, and tests prove they match Python exactly.
+
+### Honest results (test block, 5,076 rows)
+
+| | Error, ₹/kg (MAPE) |
+|---|---|
+| Gradient boosting model | 4.41 (15%) |
+| Last known price | 4.29 (16%) |
+| 30-day median | 4.79 (16%) |
+| Same period last year | 9.14 (29%) |
+| Ridge regression | 4.87 (16%) |
+
+**Accuracy:**
+- A per-series bootstrap found **no product where the model clearly beats the best simple baseline**.
+- The baseline is clearly better for Onion and Broken rice.
+
+**Ranges:**
+- The calibrated 80% ranges contained **83% of actual prices** overall, between 76% and 92% depending on the product.
+- They are wide: the median width is about half the price, which is realistic for a week ahead.
+
+**What the app shows (the user's decision after seeing these results):**
+- The **suggested price** is a simple baseline: last known price for Onion and Tomato, 30-day median for the rest, chosen per product on the calibration block.
+- The **range** is the model's calibrated range.
+- On the test block this mix had a ₹4.16/kg error with 83% coverage. Because the choice was made after the test was scored, that figure is descriptive, not an unbiased estimate.
+- Fixed listing rules (grade, organic, freshness, demand) then adjust the price. They are shown separately and are not part of the model.
+
+Full reports, cleaning rules and reproduction steps are in [`ml/README.md`](ml/README.md). Data: Agmarknet / DMI, Ministry of Agriculture & Farmers Welfare, under the Government Open Data License – India.
 
 ## Performance and correctness tests
 
@@ -188,10 +241,14 @@ With the composite index, MySQL plans to read about **16× fewer rows** than wit
 database/mysql/        schema, triggers, procedures, views, seed and demo SQL
 docs/diagrams/         ER and relational schema diagrams (+ the scripts that draw them)
 docs/screenshots/      app screenshots
+ml/                    price model pipeline (Python): data checks, dataset, training, evaluation, ONNX export, reports
 web/                   Next.js app
   src/app/             pages (market, farmer, buyer, login, signup) and server actions
-  src/lib/             MySQL pool, MongoDB client, session, embeddings, quality helpers
+  src/lib/             MySQL pool, MongoDB client, session, embeddings, quality helpers, price suggestion
+  models/              exported ONNX price models and their spec
+  data/                cleaned mandi prices loaded into MySQL
   scripts/mongodb/     collection setup, seed data, demo commands
+  scripts/mysql/       mandi price loader
 docker-compose.yml     MySQL + MongoDB + app
 ```
 
