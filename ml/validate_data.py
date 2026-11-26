@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from crops import BUYER_DISTRICTS, COMMODITY_TO_CROP, CROPS, FARMER_DISTRICTS
+from crops import BUYER_DISTRICTS, COMMODITY_TO_CROP, CROPS, FARMER_DISTRICTS, product
 
 ML = Path(__file__).resolve().parent
 OUT = ML / "reports" / "data_coverage.md"
@@ -34,6 +34,8 @@ MARKET_ALIASES = {
     "mulbagal": "mulabagilu",
     "binnymillffvbengaluru": "binnymillbengaluru",
     "binnymillfvbengaluru": "binnymillbengaluru",
+    "chandvad": "chandwad",
+    "agricultureproducemarketcomiteechandwad": "chandwad",
 }
 
 
@@ -61,19 +63,23 @@ def load() -> pd.DataFrame:
     for c in ["Min_Price", "Max_Price", "Modal_Price"]:
         df[c] = pd.to_numeric(df[c], errors="coerce")
     df["crop"] = df["Commodity"].map(COMMODITY_TO_CROP)
+    df["product"] = [product(c, m, v) if isinstance(c, str) else None
+                     for c, m, v in zip(df["crop"], df["Commodity"], df["Variety"])]
     df["market_key"] = df["Market"].map(market_key)
     return df, files
 
 
-def series_stats(g: pd.DataFrame, start: pd.Timestamp) -> dict:
+def series_stats(g: pd.DataFrame, start: pd.Timestamp, end: pd.Timestamp) -> dict:
+    """Coverage inside [start, end]. The tail from the last observation to `end` counts as a gap,
+    so a series that stopped months ago cannot pass."""
     days = pd.Series(sorted(g.loc[g["date"] >= start, "date"].unique()))
     if days.empty:
         return {"obs_days": 0, "span_days": 0, "max_gap": None, "first": None, "last": None}
-    gaps = days.diff().dt.days.dropna()
+    gaps = list(days.diff().dt.days.dropna()) + [(end - days.iloc[-1]).days]
     return {
         "obs_days": len(days),
         "span_days": (days.iloc[-1] - days.iloc[0]).days,
-        "max_gap": int(gaps.max()) if len(gaps) else 0,
+        "max_gap": int(max(gaps)),
         "first": days.iloc[0].date(),
         "last": days.iloc[-1].date(),
     }
@@ -139,30 +145,42 @@ def main():
             crop_rows.append({"crop": crop, "rows": 0, "verdict": "**no data**"})
             verdict[crop] = False
             continue
-        state_level = series_stats(g, start)
-        # Series are keyed by the normalised market, so a renamed mandi stays one series.
-        market_series = [dict(level="market", key=m, **series_stats(s, start)) for m, s in g.groupby("market_key")]
-        variety_series = [dict(level="market+variety", key=f"{m} / {v}", **series_stats(s, start))
-                          for (m, v), s in g.groupby(["market_key", "Variety"])]
+        # Every level is kept within one product and one state; markets use the normalised key,
+        # so a renamed mandi stays one series.
+        state_series = [dict(level="state", key=f"{p} / {st}", **series_stats(s, start, end))
+                        for (p, st), s in g.groupby(["product", "State"])]
+        market_series = [dict(level="market", key=f"{p} / {st} / {m}", **series_stats(s, start, end))
+                         for (p, st, m), s in g.groupby(["product", "State", "market_key"])]
+        variety_series = [dict(level="market+variety", key=f"{p} / {st} / {m} / {v}", **series_stats(s, start, end))
+                          for (p, st, m, v), s in g.groupby(["product", "State", "market_key", "Variety"])]
+        ok_state = [s for s in state_series if passes(s)]
         ok_series = [s for s in market_series + variety_series if passes(s)]
-        ok = passes(state_level) or bool(ok_series)
+        ok = bool(ok_state or ok_series)
         verdict[crop] = ok
+        best_state = max(state_series, key=lambda s: s["obs_days"])
         crop_rows.append({
             "crop": crop, "rows": len(g), "first": g["date"].min().date(), "last": g["date"].max().date(),
-            "obs days (window, state)": state_level["obs_days"], "max gap (window)": state_level["max_gap"],
-            "markets": g["market_key"].nunique(), "varieties": g["Variety"].nunique(),
-            "passing series": len(ok_series), "verdict": "pass" if ok else "**fail**",
+            "best state series": best_state["key"], "obs days": best_state["obs_days"],
+            "max gap incl. tail": best_state["max_gap"],
+            "passing state series": len(ok_state), "passing market series": len(ok_series),
+            "products passing": ", ".join(sorted({s["key"].split(" / ")[0] for s in ok_state + ok_series})) or "none",
+            "verdict": "pass" if ok else "**fail**",
         })
+        series_rows += [{"crop": crop, **s, "passes": "yes" if passes(s) else "no"}
+                        for s in sorted(state_series, key=lambda s: -s["obs_days"])]
         for s in sorted(market_series + variety_series, key=lambda s: -s["obs_days"])[:6]:
             series_rows.append({"crop": crop, **s, "passes": "yes" if passes(s) else "no"})
         md_var = g.groupby(["Variety", "Grade"]).size().sort_values(ascending=False).head(6)
         crop_rows[-1]["top variety / grade"] = "; ".join(f"{v} / {gr} ({n})" for (v, gr), n in md_var.items())
 
-    md.append(table(crop_rows, ["crop", "rows", "first", "last", "obs days (window, state)", "max gap (window)",
-                                "markets", "varieties", "passing series", "verdict"]))
+    md.append(table(crop_rows, ["crop", "rows", "first", "last", "best state series", "obs days", "max gap incl. tail",
+                                "passing state series", "passing market series", "products passing", "verdict"]))
     md.append("### Varieties and grades (top 6 per crop)\n")
     md.append(table(crop_rows, ["crop", "top variety / grade"]))
-    md.append("### Best series per crop (window)\n")
+    md.append("### Last date per district (all commodities)\n")
+    md.append(table([{"district": d, "last date": g["date"].max().date(), "rows": len(g)}
+                     for d, g in df.groupby("District")], ["district", "last date", "rows"]))
+    md.append("### Series per crop (state-level series, then best market series)\n")
     md.append(table(series_rows, ["crop", "level", "key", "obs_days", "span_days", "max_gap", "first", "last", "passes"]))
 
     # Market renames / spelling variants: the same mandi under several names.

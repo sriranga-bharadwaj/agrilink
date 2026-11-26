@@ -15,6 +15,21 @@ CROPS = {
 
 COMMODITY_TO_CROP = {c: crop for crop, names in CROPS.items() for c in names}
 
+# Rows that share a crop but are different products, priced differently; they never share a series.
+PRODUCT_BY_COMMODITY = {
+    "Arhar (Tur/Red Gram)(Whole)": "Toor (whole)",
+    "Arhar Dal(Tur Dal)": "Toor dal",
+    "Groundnut": "Groundnut",
+    "Groundnut pods (raw)": "Groundnut pods",
+}
+PRODUCT_BY_VARIETY = {("Rice", "broken rice"): "Broken rice"}
+
+
+def product(crop: str, commodity: str, variety: str) -> str:
+    return (PRODUCT_BY_VARIETY.get((crop, str(variety).strip().lower()))
+            or PRODUCT_BY_COMMODITY.get(commodity)
+            or crop)
+
 # Districts of the seeded AgriLink farmers and buyers (database/mysql/05_seed.sql).
 FARMER_DISTRICTS = ["Kolar", "Chikkaballapur", "Belagavi", "Mandya", "Hassan", "Nashik"]
 BUYER_DISTRICTS = ["Bengaluru", "Bengaluru Urban", "Bangalore", "Mysuru", "Mysore", "Tumakuru", "Tumkur"]

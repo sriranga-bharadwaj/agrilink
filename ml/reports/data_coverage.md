@@ -43,18 +43,18 @@ Generated 2026-11-26 from 12 file(s): `35985678-0d79-46b4-9ed6-6f13308a1d24_3f58
 
 Go/no-go is judged on the last 3 years (2023-11-25 to 2026-11-25). A series passes with span >= 730 days, >= 250 observed days and no gap > 60 days.
 
-| crop | rows | first | last | obs days (window, state) | max gap (window) | markets | varieties | passing series | verdict |
-|---|---|---|---|---|---|---|---|---|---|
-| Tomato | 77956 | 2002-03-14 | 2026-11-25 | 1089 | 3 | 57 | 4 | 16 | pass |
-| Onion | 103445 | 2002-03-13 | 2026-11-25 | 1076 | 3 | 77 | 16 | 20 | pass |
-| Potato | 40561 | 2002-03-13 | 2026-11-25 | 1070 | 4 | 45 | 9 | 6 | pass |
-| Rice | 61328 | 2002-03-14 | 2026-11-25 | 1056 | 4 | 60 | 44 | 4 | pass |
-| Ragi | 20921 | 2002-03-14 | 2025-10-21 | 351 | 92 | 28 | 8 | 0 | **fail** |
-| Banana | 12157 | 2001-12-14 | 2026-11-25 | 797 | 71 | 37 | 11 | 0 | **fail** |
-| Grapes | 4507 | 2002-04-01 | 2026-11-25 | 319 | 198 | 21 | 5 | 0 | **fail** |
-| Toor Dal | 15034 | 2002-04-09 | 2026-05-05 | 553 | 21 | 44 | 5 | 0 | pass |
-| Turmeric | 295 | 2005-08-13 | 2026-11-24 | 106 | 324 | 20 | 4 | 0 | **fail** |
-| Groundnut | 10671 | 2002-04-24 | 2026-11-25 | 641 | 25 | 39 | 6 | 0 | pass |
+| crop | rows | first | last | best state series | obs days | max gap incl. tail | passing state series | passing market series | products passing | verdict |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Tomato | 77956 | 2002-03-14 | 2026-11-25 | Tomato / Karnataka | 1061 | 7 | 2 | 12 | Tomato | pass |
+| Onion | 103445 | 2002-03-13 | 2026-11-25 | Onion / Karnataka | 1027 | 8 | 2 | 16 | Onion | pass |
+| Potato | 40561 | 2002-03-13 | 2026-11-25 | Potato / Karnataka | 1033 | 7 | 2 | 4 | Potato | pass |
+| Rice | 61328 | 2002-03-14 | 2026-11-25 | Rice / Maharashtra | 932 | 81 | 2 | 0 | Broken rice, Rice | pass |
+| Ragi | 20921 | 2002-03-14 | 2025-10-21 | Ragi / Karnataka | 351 | 400 | 0 | 0 | none | **fail** |
+| Banana | 12157 | 2001-12-14 | 2026-11-25 | Banana / Maharashtra | 755 | 138 | 0 | 0 | none | **fail** |
+| Grapes | 4507 | 2002-04-01 | 2026-11-25 | Grapes / Karnataka | 203 | 595 | 0 | 0 | none | **fail** |
+| Toor Dal | 15034 | 2002-04-09 | 2026-05-05 | Toor (whole) / Maharashtra | 457 | 386 | 0 | 0 | none | **fail** |
+| Turmeric | 295 | 2005-08-13 | 2026-11-24 | Turmeric / Karnataka | 106 | 324 | 0 | 0 | none | **fail** |
+| Groundnut | 10671 | 2002-04-24 | 2026-11-25 | Groundnut / Maharashtra | 553 | 27 | 1 | 0 | Groundnut | pass |
 
 ### Varieties and grades (top 6 per crop)
 
@@ -71,70 +71,108 @@ Go/no-go is judged on the last 3 years (2023-11-25 to 2026-11-25). A series pass
 | Turmeric | Turmeric / FAQ (118); Turmeric Stick / Medium (64); Local / FAQ (52); Turmeric / Local (30); Turmeric / Medium (9); Turmeric Stick / FAQ (8) |
 | Groundnut | Other / FAQ (7963); Big (With Shell) / FAQ (873); Gejje / FAQ (587); Other / Non-FAQ (421); Natte / FAQ (217); Gungri (With Shell) / FAQ (129) |
 
-### Best series per crop (window)
+### Last date per district (all commodities)
+
+| district | last date | rows |
+|---|---|---|
+| Belagavi | 2026-11-25 | 4428 |
+| Bengaluru | 2026-11-25 | 16822 |
+| Chikkaballapur | 2026-11-25 | 15395 |
+| Chikmagalur | 2026-05-28 | 157171 |
+| Hassan | 2026-11-24 | 165857 |
+| Kolar | 2026-11-25 | 392687 |
+| Mandya | 2026-11-25 | 116626 |
+| Mysuru | 2026-11-25 | 14671 |
+| Nashik | 2026-11-25 | 462760 |
+| Thane | 2026-11-25 | 145130 |
+| Tumakuru | 2026-11-25 | 4879 |
+
+### Series per crop (state-level series, then best market series)
 
 | crop | level | key | obs_days | span_days | max_gap | first | last | passes |
 |---|---|---|---|---|---|---|---|---|
-| Tomato | market | kolar | 917 | 1095 | 16 | 2023-11-25 | 2026-11-24 | yes |
-| Tomato | market+variety | kolar / Tomato | 914 | 1095 | 16 | 2023-11-25 | 2026-11-24 | yes |
-| Tomato | market | chintamani | 880 | 1094 | 13 | 2023-11-27 | 2026-11-25 | yes |
-| Tomato | market+variety | chintamani / Tomato | 880 | 1094 | 13 | 2023-11-27 | 2026-11-25 | yes |
-| Tomato | market | nasik | 808 | 1095 | 26 | 2023-11-25 | 2026-11-24 | yes |
-| Tomato | market+variety | nasik / Other | 808 | 1095 | 26 | 2023-11-25 | 2026-11-24 | yes |
-| Onion | market | lasalgaonvinchur | 836 | 1096 | 7 | 2023-11-25 | 2026-11-25 | yes |
-| Onion | market | lasalgaonniphad | 825 | 1096 | 16 | 2023-11-25 | 2026-11-25 | yes |
-| Onion | market | nasik | 812 | 1096 | 10 | 2023-11-25 | 2026-11-25 | yes |
-| Onion | market | lasalgaon | 792 | 1096 | 15 | 2023-11-25 | 2026-11-25 | yes |
-| Onion | market | manmad | 791 | 1094 | 39 | 2023-11-25 | 2026-11-23 | yes |
-| Onion | market | pimpalgaonbaswantsaykheda | 784 | 1096 | 23 | 2023-11-25 | 2026-11-25 | yes |
-| Potato | market | nasik | 813 | 1096 | 10 | 2023-11-25 | 2026-11-25 | yes |
-| Potato | market+variety | nasik / Other | 813 | 1096 | 10 | 2023-11-25 | 2026-11-25 | yes |
-| Potato | market | bangarpet | 657 | 1094 | 192 | 2023-11-27 | 2026-11-25 | no |
-| Potato | market+variety | bangarpet / Local | 653 | 1093 | 192 | 2023-11-28 | 2026-11-25 | no |
-| Potato | market | chikkamagalore | 595 | 913 | 13 | 2023-11-27 | 2026-05-28 | yes |
-| Potato | market+variety | chikkamagalore / Other | 595 | 913 | 13 | 2023-11-27 | 2026-05-28 | yes |
-| Rice | market | palghar | 819 | 898 | 7 | 2023-11-27 | 2026-05-13 | yes |
-| Rice | market+variety | palghar / 1009 Kar | 819 | 898 | 7 | 2023-11-27 | 2026-05-13 | yes |
-| Rice | market | ulhasnagar | 692 | 1094 | 81 | 2023-11-27 | 2026-11-25 | no |
-| Rice | market+variety | ulhasnagar / Other | 692 | 1094 | 81 | 2023-11-27 | 2026-11-25 | no |
-| Rice | market | vasai | 630 | 897 | 13 | 2023-11-28 | 2026-05-13 | yes |
-| Rice | market+variety | vasai / 1009 Kar | 630 | 897 | 13 | 2023-11-28 | 2026-05-13 | yes |
-| Ragi | market | nagamangala | 229 | 460 | 22 | 2023-11-27 | 2025-03-01 | no |
-| Ragi | market+variety | nagamangala / Local | 227 | 460 | 22 | 2023-11-27 | 2025-03-01 | no |
-| Ragi | market | arasikere | 157 | 459 | 17 | 2023-12-01 | 2025-03-04 | no |
-| Ragi | market+variety | arasikere / Local | 157 | 459 | 17 | 2023-12-01 | 2025-03-04 | no |
-| Ragi | market | chintamani | 47 | 330 | 105 | 2023-11-29 | 2024-10-24 | no |
-| Ragi | market+variety | chintamani / Local | 47 | 330 | 105 | 2023-11-29 | 2024-10-24 | no |
-| Banana | market | nasik | 755 | 1096 | 138 | 2023-11-25 | 2026-11-25 | no |
-| Banana | market+variety | nasik / Khandesh | 755 | 1096 | 138 | 2023-11-25 | 2026-11-25 | no |
-| Banana | market | binnymillbengaluru | 174 | 238 | 4 | 2026-04-01 | 2026-11-25 | no |
-| Banana | market+variety | binnymillbengaluru / Elakki Bale | 173 | 238 | 4 | 2026-04-01 | 2026-11-25 | no |
-| Banana | market+variety | binnymillbengaluru / Pachha Bale | 173 | 238 | 4 | 2026-04-01 | 2026-11-25 | no |
-| Banana | market+variety | binnymillbengaluru / Nendra Bale | 172 | 238 | 4 | 2026-04-01 | 2026-11-25 | no |
-| Grapes | market | binnymillbengaluru | 173 | 238 | 4 | 2026-04-01 | 2026-11-25 | no |
-| Grapes | market+variety | binnymillbengaluru / Black | 173 | 238 | 4 | 2026-04-01 | 2026-11-25 | no |
-| Grapes | market | mysuru | 152 | 236 | 6 | 2026-04-02 | 2026-11-24 | no |
-| Grapes | market+variety | binnymillbengaluru / Espani | 132 | 180 | 4 | 2026-05-29 | 2026-11-25 | no |
-| Grapes | market+variety | mysuru / Black | 93 | 235 | 9 | 2026-04-03 | 2026-11-24 | no |
-| Grapes | market | lasalgaonniphad | 77 | 721 | 341 | 2024-04-19 | 2026-04-10 | no |
-| Toor Dal | market | malegaon | 258 | 710 | 80 | 2023-11-25 | 2025-11-04 | no |
-| Toor Dal | market+variety | malegaon / Other | 258 | 710 | 80 | 2023-11-25 | 2025-11-04 | no |
-| Toor Dal | market | nandgaon | 236 | 671 | 126 | 2023-12-14 | 2025-10-15 | no |
-| Toor Dal | market+variety | nandgaon / Other | 236 | 671 | 126 | 2023-12-14 | 2025-10-15 | no |
-| Toor Dal | market | lasalgaon | 210 | 646 | 46 | 2023-12-18 | 2025-09-24 | no |
-| Toor Dal | market+variety | lasalgaon / Other | 210 | 646 | 46 | 2023-12-18 | 2025-09-24 | no |
-| Turmeric | market | bengaluru | 64 | 221 | 10 | 2026-04-17 | 2026-11-24 | no |
-| Turmeric | market+variety | bengaluru / Turmeric Stick | 64 | 221 | 10 | 2026-04-17 | 2026-11-24 | no |
-| Turmeric | market | koppa | 20 | 444 | 324 | 2025-01-27 | 2026-04-16 | no |
-| Turmeric | market+variety | koppa / Turmeric | 20 | 444 | 324 | 2025-01-27 | 2026-04-16 | no |
-| Turmeric | market | mysuru | 12 | 183 | 36 | 2026-04-06 | 2026-10-06 | no |
-| Turmeric | market+variety | mysuru / Turmeric | 12 | 183 | 36 | 2026-04-06 | 2026-10-06 | no |
-| Groundnut | market | nasik | 246 | 422 | 25 | 2023-11-25 | 2025-01-20 | no |
-| Groundnut | market+variety | nasik / Other | 246 | 422 | 25 | 2023-11-25 | 2025-01-20 | no |
-| Groundnut | market | malegaon | 177 | 1043 | 182 | 2024-01-10 | 2026-11-18 | no |
-| Groundnut | market+variety | malegaon / Other | 177 | 1043 | 182 | 2024-01-10 | 2026-11-18 | no |
-| Groundnut | market | lasalgaon | 167 | 780 | 186 | 2023-12-29 | 2026-02-16 | no |
-| Groundnut | market+variety | lasalgaon / Other | 167 | 780 | 186 | 2023-12-29 | 2026-02-16 | no |
+| Tomato | state | Tomato / Karnataka | 1061 | 1096 | 7 | 2023-11-25 | 2026-11-25 | yes |
+| Tomato | state | Tomato / Maharashtra | 1009 | 1095 | 10 | 2023-11-25 | 2026-11-24 | yes |
+| Tomato | market | Tomato / Karnataka / kolar | 917 | 1095 | 16 | 2023-11-25 | 2026-11-24 | yes |
+| Tomato | market+variety | Tomato / Karnataka / kolar / Tomato | 914 | 1095 | 16 | 2023-11-25 | 2026-11-24 | yes |
+| Tomato | market | Tomato / Karnataka / chintamani | 880 | 1094 | 13 | 2023-11-27 | 2026-11-25 | yes |
+| Tomato | market+variety | Tomato / Karnataka / chintamani / Tomato | 880 | 1094 | 13 | 2023-11-27 | 2026-11-25 | yes |
+| Tomato | market | Tomato / Maharashtra / nasik | 808 | 1095 | 26 | 2023-11-25 | 2026-11-24 | yes |
+| Tomato | market+variety | Tomato / Maharashtra / nasik / Other | 808 | 1095 | 26 | 2023-11-25 | 2026-11-24 | yes |
+| Onion | state | Onion / Karnataka | 1027 | 1094 | 8 | 2023-11-27 | 2026-11-25 | yes |
+| Onion | state | Onion / Maharashtra | 988 | 1096 | 4 | 2023-11-25 | 2026-11-25 | yes |
+| Onion | market | Onion / Maharashtra / lasalgaonvinchur | 836 | 1096 | 7 | 2023-11-25 | 2026-11-25 | yes |
+| Onion | market | Onion / Maharashtra / lasalgaonniphad | 825 | 1096 | 16 | 2023-11-25 | 2026-11-25 | yes |
+| Onion | market | Onion / Maharashtra / nasik | 812 | 1096 | 10 | 2023-11-25 | 2026-11-25 | yes |
+| Onion | market | Onion / Maharashtra / lasalgaon | 792 | 1096 | 15 | 2023-11-25 | 2026-11-25 | yes |
+| Onion | market | Onion / Maharashtra / manmad | 791 | 1094 | 39 | 2023-11-25 | 2026-11-23 | yes |
+| Onion | market | Onion / Maharashtra / pimpalgaonbaswantsaykheda | 784 | 1096 | 23 | 2023-11-25 | 2026-11-25 | yes |
+| Potato | state | Potato / Karnataka | 1033 | 1094 | 7 | 2023-11-27 | 2026-11-25 | yes |
+| Potato | state | Potato / Maharashtra | 905 | 1096 | 10 | 2023-11-25 | 2026-11-25 | yes |
+| Potato | market | Potato / Maharashtra / nasik | 813 | 1096 | 10 | 2023-11-25 | 2026-11-25 | yes |
+| Potato | market+variety | Potato / Maharashtra / nasik / Other | 813 | 1096 | 10 | 2023-11-25 | 2026-11-25 | yes |
+| Potato | market | Potato / Karnataka / bangarpet | 657 | 1094 | 192 | 2023-11-27 | 2026-11-25 | no |
+| Potato | market+variety | Potato / Karnataka / bangarpet / Local | 653 | 1093 | 192 | 2023-11-28 | 2026-11-25 | no |
+| Potato | market | Potato / Karnataka / chikkamagalore | 595 | 913 | 181 | 2023-11-27 | 2026-05-28 | no |
+| Potato | market+variety | Potato / Karnataka / chikkamagalore / Other | 595 | 913 | 181 | 2023-11-27 | 2026-05-28 | no |
+| Rice | state | Rice / Maharashtra | 932 | 1094 | 81 | 2023-11-27 | 2026-11-25 | no |
+| Rice | state | Rice / Karnataka | 755 | 1094 | 14 | 2023-11-27 | 2026-11-25 | yes |
+| Rice | state | Broken rice / Karnataka | 441 | 1089 | 56 | 2023-12-01 | 2026-11-24 | yes |
+| Rice | market | Rice / Maharashtra / palghar | 819 | 898 | 196 | 2023-11-27 | 2026-05-13 | no |
+| Rice | market+variety | Rice / Maharashtra / palghar / 1009 Kar | 819 | 898 | 196 | 2023-11-27 | 2026-05-13 | no |
+| Rice | market | Rice / Maharashtra / ulhasnagar | 692 | 1094 | 81 | 2023-11-27 | 2026-11-25 | no |
+| Rice | market+variety | Rice / Maharashtra / ulhasnagar / Other | 692 | 1094 | 81 | 2023-11-27 | 2026-11-25 | no |
+| Rice | market | Rice / Maharashtra / vasai | 630 | 897 | 196 | 2023-11-28 | 2026-05-13 | no |
+| Rice | market+variety | Rice / Maharashtra / vasai / 1009 Kar | 630 | 897 | 196 | 2023-11-28 | 2026-05-13 | no |
+| Ragi | state | Ragi / Karnataka | 351 | 694 | 400 | 2023-11-27 | 2025-10-21 | no |
+| Ragi | market | Ragi / Karnataka / nagamangala | 229 | 460 | 634 | 2023-11-27 | 2025-03-01 | no |
+| Ragi | market+variety | Ragi / Karnataka / nagamangala / Local | 227 | 460 | 634 | 2023-11-27 | 2025-03-01 | no |
+| Ragi | market | Ragi / Karnataka / arasikere | 157 | 459 | 631 | 2023-12-01 | 2025-03-04 | no |
+| Ragi | market+variety | Ragi / Karnataka / arasikere / Local | 157 | 459 | 631 | 2023-12-01 | 2025-03-04 | no |
+| Ragi | market | Ragi / Karnataka / chintamani | 47 | 330 | 762 | 2023-11-29 | 2024-10-24 | no |
+| Ragi | market+variety | Ragi / Karnataka / chintamani / Local | 47 | 330 | 762 | 2023-11-29 | 2024-10-24 | no |
+| Banana | state | Banana / Maharashtra | 755 | 1096 | 138 | 2023-11-25 | 2026-11-25 | no |
+| Banana | state | Banana / Karnataka | 270 | 1037 | 160 | 2024-01-23 | 2026-11-25 | no |
+| Banana | market | Banana / Maharashtra / nasik | 755 | 1096 | 138 | 2023-11-25 | 2026-11-25 | no |
+| Banana | market+variety | Banana / Maharashtra / nasik / Khandesh | 755 | 1096 | 138 | 2023-11-25 | 2026-11-25 | no |
+| Banana | market | Banana / Karnataka / binnymillbengaluru | 174 | 238 | 4 | 2026-04-01 | 2026-11-25 | no |
+| Banana | market+variety | Banana / Karnataka / binnymillbengaluru / Elakki Bale | 173 | 238 | 4 | 2026-04-01 | 2026-11-25 | no |
+| Banana | market+variety | Banana / Karnataka / binnymillbengaluru / Pachha Bale | 173 | 238 | 4 | 2026-04-01 | 2026-11-25 | no |
+| Banana | market+variety | Banana / Karnataka / binnymillbengaluru / Nendra Bale | 172 | 238 | 4 | 2026-04-01 | 2026-11-25 | no |
+| Grapes | state | Grapes / Karnataka | 203 | 1094 | 595 | 2023-11-27 | 2026-11-25 | no |
+| Grapes | state | Grapes / Maharashtra | 131 | 753 | 198 | 2024-04-19 | 2026-05-12 | no |
+| Grapes | market | Grapes / Karnataka / binnymillbengaluru | 173 | 238 | 4 | 2026-04-01 | 2026-11-25 | no |
+| Grapes | market+variety | Grapes / Karnataka / binnymillbengaluru / Black | 173 | 238 | 4 | 2026-04-01 | 2026-11-25 | no |
+| Grapes | market | Grapes / Karnataka / mysuru | 152 | 236 | 6 | 2026-04-02 | 2026-11-24 | no |
+| Grapes | market+variety | Grapes / Karnataka / binnymillbengaluru / Espani | 132 | 180 | 4 | 2026-05-29 | 2026-11-25 | no |
+| Grapes | market+variety | Grapes / Karnataka / mysuru / Black | 93 | 235 | 9 | 2026-04-03 | 2026-11-24 | no |
+| Grapes | market | Grapes / Maharashtra / lasalgaonniphad | 77 | 721 | 341 | 2024-04-19 | 2026-04-10 | no |
+| Toor Dal | state | Toor (whole) / Maharashtra | 457 | 710 | 386 | 2023-11-25 | 2025-11-04 | no |
+| Toor Dal | state | Toor dal / Karnataka | 198 | 890 | 204 | 2023-11-27 | 2026-05-05 | no |
+| Toor Dal | state | Toor (whole) / Karnataka | 25 | 568 | 484 | 2024-01-08 | 2025-07-29 | no |
+| Toor Dal | market | Toor (whole) / Maharashtra / malegaon | 258 | 710 | 386 | 2023-11-25 | 2025-11-04 | no |
+| Toor Dal | market+variety | Toor (whole) / Maharashtra / malegaon / Other | 258 | 710 | 386 | 2023-11-25 | 2025-11-04 | no |
+| Toor Dal | market | Toor (whole) / Maharashtra / nandgaon | 236 | 671 | 406 | 2023-12-14 | 2025-10-15 | no |
+| Toor Dal | market+variety | Toor (whole) / Maharashtra / nandgaon / Other | 236 | 671 | 406 | 2023-12-14 | 2025-10-15 | no |
+| Toor Dal | market | Toor (whole) / Maharashtra / lasalgaon | 210 | 646 | 427 | 2023-12-18 | 2025-09-24 | no |
+| Toor Dal | market+variety | Toor (whole) / Maharashtra / lasalgaon / Other | 210 | 646 | 427 | 2023-12-18 | 2025-09-24 | no |
+| Turmeric | state | Turmeric / Karnataka | 106 | 757 | 324 | 2024-10-28 | 2026-11-24 | no |
+| Turmeric | state | Turmeric / Maharashtra | 0 | 0 |  |  |  | no |
+| Turmeric | market | Turmeric / Karnataka / bengaluru | 64 | 221 | 10 | 2026-04-17 | 2026-11-24 | no |
+| Turmeric | market+variety | Turmeric / Karnataka / bengaluru / Turmeric Stick | 64 | 221 | 10 | 2026-04-17 | 2026-11-24 | no |
+| Turmeric | market | Turmeric / Karnataka / koppa | 20 | 444 | 324 | 2025-01-27 | 2026-04-16 | no |
+| Turmeric | market+variety | Turmeric / Karnataka / koppa / Turmeric | 20 | 444 | 324 | 2025-01-27 | 2026-04-16 | no |
+| Turmeric | market | Turmeric / Karnataka / mysuru | 12 | 183 | 50 | 2026-04-06 | 2026-10-06 | no |
+| Turmeric | market+variety | Turmeric / Karnataka / mysuru / Turmeric | 12 | 183 | 50 | 2026-04-06 | 2026-10-06 | no |
+| Groundnut | state | Groundnut / Maharashtra | 553 | 1094 | 27 | 2023-11-25 | 2026-11-23 | yes |
+| Groundnut | state | Groundnut / Karnataka | 246 | 1071 | 119 | 2023-12-20 | 2026-11-25 | no |
+| Groundnut | state | Groundnut pods / Maharashtra | 0 | 0 |  |  |  | no |
+| Groundnut | market | Groundnut / Maharashtra / nasik | 246 | 422 | 674 | 2023-11-25 | 2025-01-20 | no |
+| Groundnut | market+variety | Groundnut / Maharashtra / nasik / Other | 246 | 422 | 674 | 2023-11-25 | 2025-01-20 | no |
+| Groundnut | market | Groundnut / Maharashtra / malegaon | 177 | 1043 | 182 | 2024-01-10 | 2026-11-18 | no |
+| Groundnut | market+variety | Groundnut / Maharashtra / malegaon / Other | 177 | 1043 | 182 | 2024-01-10 | 2026-11-18 | no |
+| Groundnut | market | Groundnut / Maharashtra / lasalgaon | 167 | 780 | 282 | 2023-12-29 | 2026-02-16 | no |
+| Groundnut | market+variety | Groundnut / Maharashtra / lasalgaon / Other | 167 | 780 | 282 | 2023-12-29 | 2026-02-16 | no |
 
 ## 5. Findings that affect modelling
 
@@ -212,7 +250,7 @@ Go/no-go is judged on the last 3 years (2023-11-25 to 2026-11-25). A series pass
 
 ## 6. Verdict
 
-- Crops passing: **6 / 10** (Tomato, Onion, Potato, Rice, Toor Dal, Groundnut)
+- Crops passing: **5 / 10** (Tomato, Onion, Potato, Rice, Groundnut)
 - Rule for overall go: >= 5 crops pass **and** data covers the markets the app serves.
 - AgriLink farmer districts covered: **6 / 6** ['Kolar', 'Chikkaballapur', 'Belagavi', 'Mandya', 'Hassan', 'Nashik']
 - **Overall: GO**
