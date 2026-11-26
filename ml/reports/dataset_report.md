@@ -19,7 +19,29 @@ Generated 2026-11-26. Horizon **h = 7 days**: every feature uses observations da
 | dropped: modal <= 0 or outside [min, max] | 103 |
 | rows kept | 289,092 |
 
-Price spikes are **flagged, not dropped** (> 3x away from the trailing 30-day median of the same series), so real tomato and onion surges stay in the test set.
+## Data-entry errors removed (per series-day, judged against the previous 30 days only)
+
+Rules (user decision): price outside Rs 0.5-1000/kg, or more than 8x above/below the median of the same series over the previous 30 days. Applied identically to every split.
+
+| split | impossible price | 8x jump |
+|---|---|---|
+| before 2015 | 24 | 21 |
+| test | 0 | 9 |
+| train | 23 | 57 |
+
+| product | state | market | date | split | price | previous 30-day median | reason |
+|---|---|---|---|---|---|---|---|
+| Tomato | Karnataka | belgaum | 2026-10-27 | test | 2.80 | 37.42 | 8x jump |
+| Tomato | Karnataka | belgaum | 2026-10-28 | test | 2.50 | 35.00 | 8x jump |
+| Tomato | Karnataka | belgaum | 2026-10-29 | test | 3.00 | 32.40 | 8x jump |
+| Tomato | Karnataka | belgaum | 2026-10-30 | test | 3.50 | 30.00 | 8x jump |
+| Tomato | Karnataka | belgaum | 2026-10-31 | test | 2.50 | 30.00 | 8x jump |
+| Tomato | Karnataka | belgaum | 2026-11-02 | test | 3.00 | 30.00 | 8x jump |
+| Tomato | Karnataka | belgaum | 2026-11-04 | test | 2.50 | 27.39 | 8x jump |
+| Tomato | Karnataka | belgaum | 2026-11-13 | test | 2.00 | 28.00 | 8x jump |
+| Tomato | Karnataka | belgaum | 2026-11-18 | test | 3.00 | 28.98 | 8x jump |
+
+Smaller moves (3x-8x) are **flagged, not dropped**, so real surges stay in the test set.
 
 ## Variety groups (fitted on the training window)
 
@@ -36,32 +58,32 @@ Price spikes are **flagged, not dropped** (> 3x away from the trailing 30-day me
 
 | product | split | rows | series | spikes flagged |
 |---|---|---|---|---|
-| Broken rice | train | 4,571 | 24 | 4 |
+| Broken rice | train | 4,569 | 24 | 1 |
 | Broken rice | calibration | 129 | 14 | 0 |
 | Broken rice | test | 123 | 12 | 0 |
 | Groundnut | train | 3,404 | 33 | 2 |
 | Groundnut | calibration | 143 | 10 | 0 |
 | Groundnut | test | 139 | 13 | 0 |
-| Onion | train | 61,172 | 122 | 174 |
+| Onion | train | 61,146 | 122 | 150 |
 | Onion | calibration | 2,029 | 51 | 2 |
 | Onion | test | 1,989 | 59 | 2 |
-| Potato | train | 18,824 | 42 | 34 |
+| Potato | train | 18,816 | 42 | 26 |
 | Potato | calibration | 743 | 22 | 2 |
 | Potato | test | 739 | 22 | 1 |
-| Rice | train | 23,308 | 97 | 17 |
+| Rice | train | 23,306 | 97 | 15 |
 | Rice | calibration | 722 | 49 | 2 |
 | Rice | test | 834 | 47 | 1 |
-| Tomato | train | 45,862 | 51 | 805 |
+| Tomato | train | 45,820 | 51 | 788 |
 | Tomato | calibration | 1,292 | 32 | 3 |
-| Tomato | test | 1,261 | 30 | 16 |
+| Tomato | test | 1,252 | 30 | 7 |
 
-Targets dropped because no level had usable history at t - 7: **160** of 167,444.
+Targets dropped because no level had usable history at t - 7: **160** of 167,355.
 
 ## Feature level used (share of rows)
 
 | split | market+product | market+variety | state+product | state+variety |
 |---|---|---|---|---|
-| train | 2.2% | 93.6% | 0.4% | 3.8% |
+| train | 2.2% | 93.5% | 0.4% | 3.8% |
 | calibration | 1.0% | 95.9% | 0.3% | 2.7% |
 | test | 2.0% | 94.3% | 0.1% | 3.6% |
 
@@ -100,16 +122,16 @@ Targets dropped because no level had usable history at t - 7: **160** of 167,444
 | Groundnut | train | 8.45 | 43.27 | 150.00 |
 | Onion | calibration | 5.32 | 20.10 | 70.00 |
 | Onion | test | 10.00 | 40.00 | 70.00 |
-| Onion | train | 0.11 | 13.75 | 9175884.83 |
+| Onion | train | 0.50 | 13.75 | 166.27 |
 | Potato | calibration | 3.00 | 15.00 | 110.00 |
 | Potato | test | 6.50 | 17.50 | 55.50 |
-| Potato | train | 0.11 | 15.00 | 170.00 |
+| Potato | train | 2.38 | 15.00 | 90.00 |
 | Rice | calibration | 17.00 | 40.10 | 154.74 |
 | Rice | test | 18.00 | 45.02 | 192.50 |
-| Rice | train | 2.80 | 32.90 | 180.00 |
+| Rice | train | 9.00 | 32.90 | 164.50 |
 | Tomato | calibration | 4.50 | 15.00 | 50.00 |
 | Tomato | test | 2.00 | 14.00 | 55.50 |
-| Tomato | train | 0.30 | 10.00 | 290.00 |
+| Tomato | train | 0.50 | 10.00 | 290.00 |
 
 ## Where calibration and test rows come from (rows per state)
 
@@ -126,9 +148,9 @@ Targets dropped because no level had usable history at t - 7: **160** of 167,444
 | Rice | calibration | 707 | 15 |
 | Rice | test | 722 | 112 |
 | Tomato | calibration | 1053 | 239 |
-| Tomato | test | 1047 | 214 |
+| Tomato | test | 1038 | 214 |
 
-## Spike-flagged calibration and test rows (29)
+## Spike-flagged calibration and test rows (20)
 
 Kept in the data. `lag1` is the last price known at t - h, for comparison.
 
@@ -154,15 +176,6 @@ Kept in the data. `lag1` is the last price known at t - h, for comparison.
 | Tomato | Karnataka | arasikere | Common | 2026-10-09 | test | 40.00 | 10.00 | 4.0x |
 | Tomato | Maharashtra | nasik | Common | 2026-10-23 | test | 2.75 | 5.05 | 0.5x |
 | Tomato | Maharashtra | pimpalgaonbaswant | Common | 2026-10-23 | test | 4.05 | 7.55 | 0.5x |
-| Tomato | Karnataka | belgaum | Common | 2026-10-27 | test | 2.80 | 50.00 | 0.1x |
-| Tomato | Karnataka | belgaum | Common | 2026-10-28 | test | 2.50 | 50.00 | 0.1x |
-| Tomato | Karnataka | belgaum | Common | 2026-10-29 | test | 3.00 | 30.00 | 0.1x |
-| Tomato | Karnataka | belgaum | Common | 2026-10-30 | test | 3.50 | 30.00 | 0.1x |
-| Tomato | Karnataka | belgaum | Common | 2026-10-31 | test | 2.50 | 40.00 | 0.1x |
-| Tomato | Karnataka | belgaum | Common | 2026-11-02 | test | 3.00 | 40.00 | 0.1x |
-| Tomato | Karnataka | belgaum | Common | 2026-11-04 | test | 2.50 | 2.50 | 1.0x |
-| Tomato | Karnataka | belgaum | Common | 2026-11-13 | test | 2.00 | 30.00 | 0.1x |
-| Tomato | Karnataka | belgaum | Common | 2026-11-18 | test | 3.00 | 21.00 | 0.1x |
 
 **Thin products.** Broken rice and Groundnut have only about 130 calibration and 130 test rows each, spread over about a dozen series, so their accuracy and coverage numbers will be noisy.
 

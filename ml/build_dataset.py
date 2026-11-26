@@ -28,6 +28,8 @@ USABLE_STALENESS = 21                  # a level is usable if its latest observa
 MIN_N30 = 3                            # ... and it has >= 3 observations in its 30-day window
 VARIETY_MIN_ROWS = 1000                # named varieties with fewer training rows become "Other"
 SPIKE_LOG = np.log(3)                  # flag (never drop) moves > 3x vs the trailing 30-day median
+PRICE_BOUNDS = (0.5, 1000.0)           # Rs/kg outside this range is a data-entry error, dropped
+JUMP_LOG = np.log(8)                   # dropped: > 8x away from the median of the previous 30 days (user decision)
 PREMIUM_MIN_DAYS = 30
 
 LEVELS = {                             # fallback order: most specific first
@@ -164,6 +166,21 @@ def build_features(rows: pd.DataFrame, targets: pd.DataFrame) -> pd.DataFrame:
     return f.reset_index(drop=True)
 
 
+def drop_errors(rows: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Removes impossible prices and > 8x jumps, judged per series-day against the previous 30 days only,
+    so the decision for a day never depends on later data. Returns (kept rows, removed series-days)."""
+    s = daily(rows, SERIES)
+    prev = []
+    for _, g in s.groupby(SERIES, sort=False):
+        prev.append(pd.Series(g.set_index("date")["lp"].rolling("30D", closed="left").median().values, index=g.index))
+    s["prev"] = pd.concat(prev).reindex(s.index)
+    s["impossible"] = (s["price"] < PRICE_BOUNDS[0]) | (s["price"] > PRICE_BOUNDS[1])
+    s["jump"] = ~s["impossible"] & ((s["lp"] - s["prev"]).abs() > JUMP_LOG)
+    bad = s[s["impossible"] | s["jump"]]
+    keep = rows.merge(bad[SERIES + ["date"]].assign(_bad=True), on=SERIES + ["date"], how="left")
+    return rows[keep["_bad"].isna().values], bad
+
+
 def flag_spikes(series: pd.DataFrame) -> pd.Series:
     """True where a value is > 3x away from the median of the previous 30 days of the same series."""
     flags = []
@@ -175,14 +192,17 @@ def flag_spikes(series: pd.DataFrame) -> pd.Series:
 
 
 # ---------------------------------------------------------------- leakage checks
-def leakage_check(rows, built, per_stratum=12, seed=7) -> dict:
-    """Recompute features for sampled targets from raw rows truncated at t - H; they must be identical.
-    The sample is stratified by split and feature level so test rows and every fallback path are covered."""
+def leakage_check(rows_before_drop, built, per_stratum=12, seed=7) -> dict:
+    """Recompute features for sampled targets from rows truncated at t - H *before* error removal,
+    aggregation and every later step; they must be identical. The sample is stratified by split and
+    feature level so test rows and every fallback path are covered."""
     sample = (built.groupby(["split", "feature_level"], group_keys=False)
               .apply(lambda g: g.sample(n=min(per_stratum, len(g)), random_state=seed)))
     worst, mismatches = 0.0, 0
     for _, tr in sample.iterrows():
-        cut = rows[(rows["product"] == tr["product"]) & (rows["date"] <= tr["date"] - pd.Timedelta(days=H))]
+        cut = rows_before_drop[(rows_before_drop["product"] == tr["product"])
+                               & (rows_before_drop["date"] <= tr["date"] - pd.Timedelta(days=H))]
+        cut, _ = drop_errors(cut)
         one = build_features(cut, pd.DataFrame([tr[SERIES + ["date"]]])).iloc[0]
         full = built[(built[SERIES] == tr[SERIES]).all(axis=1) & (built["date"] == tr["date"])].iloc[0]
         for c in NUMERIC:
@@ -230,6 +250,11 @@ def main():
 
     groups = fit_variety_groups(rows[rows["date"] <= train_end])
     rows["vgroup"] = assign_vgroup(rows, groups)
+    rows_before_drop = rows
+    rows, removed = drop_errors(rows)
+    removed["split"] = "before 2015"
+    for name, (a, b) in splits.items():
+        removed.loc[removed["date"].between(a, b), "split"] = name
 
     series = daily(rows, SERIES)
     series["spike"] = flag_spikes(series)
@@ -247,7 +272,7 @@ def main():
     (ML / "data").mkdir(exist_ok=True)
     dataset.to_pickle(ML / "data" / "dataset.pkl")
 
-    leak = leakage_check(rows, dataset)
+    leak = leakage_check(rows_before_drop, dataset)
     bound = boundary_check()
 
     (ML / "artifacts").mkdir(exist_ok=True)
@@ -267,8 +292,18 @@ def main():
           table([{"split": k, "from": a.date(), "to": b.date()} for k, (a, b) in splits.items()], ["split", "from", "to"]),
           "## Cleaning (row-local rules only; nothing fitted on future data)\n",
           table([{"step": k, "rows": f"{v:,}"} for k, v in clean_counts.items()], ["step", "rows"]),
-          f"Price spikes are **flagged, not dropped** (> 3x away from the trailing 30-day median of the same series), "
-          "so real tomato and onion surges stay in the test set.\n",
+          "## Data-entry errors removed (per series-day, judged against the previous 30 days only)\n",
+          f"Rules (user decision): price outside Rs {PRICE_BOUNDS[0]}-{PRICE_BOUNDS[1]:.0f}/kg, or more than 8x above/below "
+          "the median of the same series over the previous 30 days. Applied identically to every split.\n",
+          table([{"split": s, "impossible price": int(g["impossible"].sum()), "8x jump": int(g["jump"].sum())}
+                 for s, g in removed.groupby("split")], ["split", "impossible price", "8x jump"]),
+          table([{"product": r["product"], "state": r["State"], "market": r["market_key"], "date": r["date"].date(),
+                  "split": r["split"], "price": f"{r['price']:.2f}",
+                  "previous 30-day median": "" if pd.isna(r["prev"]) else f"{np.exp(r['prev']):.2f}",
+                  "reason": "impossible" if r["impossible"] else "8x jump"}
+                 for _, r in removed[removed["split"].isin(["calibration", "test"])].sort_values("date").iterrows()],
+                ["product", "state", "market", "date", "split", "price", "previous 30-day median", "reason"]),
+          "Smaller moves (3x-8x) are **flagged, not dropped**, so real surges stay in the test set.\n",
           "## Variety groups (fitted on the training window)\n",
           table([{"product": p, "named groups (>= %d training rows)" % VARIETY_MIN_ROWS: ", ".join(v.title() for v in vs) or "none",
                   "rows labelled Common (generic)": f"{rows[rows['product'] == p]['vgroup'].eq('Common').mean():.0%}"}
