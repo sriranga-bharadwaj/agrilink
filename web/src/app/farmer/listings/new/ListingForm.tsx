@@ -1,13 +1,53 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { createListing } from "@/app/actions/listings";
+import { createListing, suggestPrice, type PriceSuggestionState } from "@/app/actions/listings";
 import { AttributeInputs } from "@/components/AttributeInputs";
 import type { CropSpec } from "@/lib/quality";
 import type { Crop } from "@/lib/types";
 
+const rs = (x: number) => `₹${x.toFixed(2)}`;
+const day = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+
+function SuggestionCard({ s, onUse }: { s: NonNullable<PriceSuggestionState>; onUse: (price: string) => void }) {
+  if ("error" in s) return <p className="rounded-md bg-stone-50 p-3 text-sm text-stone-700">{s.error}</p>;
+  const m = s.mandi;
+  return (
+    <div className="space-y-3 rounded-lg border border-brand-200 bg-brand-50 p-4 text-sm">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <div>
+          <div className="text-xs uppercase tracking-wide text-brand-700">Suggested price</div>
+          <div className="text-2xl font-semibold text-stone-900">{rs(s.price)}<span className="text-base font-normal">/kg</span></div>
+          <div className="text-stone-600">
+            {Math.round(s.coverage * 100)}% range {rs(s.low)} – {rs(s.high)}
+          </div>
+        </div>
+        <button type="button" className="btn" onClick={() => onUse(s.price.toFixed(2))}>Use this price</button>
+      </div>
+      <ul className="space-y-1 text-stone-700">
+        <li>
+          <span className="font-medium">Mandi basis:</span> {m.product}
+          {m.varietyGroup !== "Common" && ` (${m.varietyGroup})`}{" "}
+          {m.market ? `at ${m.market}` : `across ${m.state} (no recent prices from your mandi)`}: {m.basis} {rs(m.price)}/kg,
+          range {rs(m.low)} – {rs(m.high)}. Government prices up to {day(m.dataUpTo)}.
+        </li>
+        <li>
+          <span className="font-medium">Listing rules:</span>{" "}
+          {s.adjustments.map((a) => `${a.label} ${a.pct > 0 ? "+" : ""}${a.pct}%`).join(" · ")}
+        </li>
+      </ul>
+      <p className="text-xs text-stone-500">
+        The range comes from a model trained on Agmarknet mandi prices: in held-out months, about 80% of actual
+        prices a week later fell inside it. The listing rules are fixed adjustments, not part of the model.
+      </p>
+    </div>
+  );
+}
+
 export function ListingForm({ crops, specs, today }: { crops: Crop[]; specs: CropSpec[]; today: string }) {
   const [state, formAction, pending] = useActionState(createListing, null);
+  const [suggestion, suggestAction, suggesting] = useActionState(suggestPrice, null);
+  const [price, setPrice] = useState("");
   const [cropId, setCropId] = useState(crops[0]?.crop_id);
   const cropName = crops.find((c) => c.crop_id === cropId)?.crop_name;
   const spec = specs.find((s) => s.crop === cropName);
@@ -32,8 +72,14 @@ export function ListingForm({ crops, specs, today }: { crops: Crop[]; specs: Cro
             <input className="input" name="quantity_kg" type="number" min="1" step="0.01" required />
           </div>
           <div>
-            <label className="label">Price (₹ per kg)</label>
-            <input className="input" name="price_per_kg" type="number" min="0.01" step="0.01" required />
+            <label className="label" htmlFor="price_per_kg">Price (₹ per kg)</label>
+            <div className="flex gap-2">
+              <input className="input" id="price_per_kg" name="price_per_kg" type="number" min="0.01" step="0.01"
+                required value={price} onChange={(e) => setPrice(e.target.value)} />
+              <button className="btn-outline whitespace-nowrap" formAction={suggestAction} formNoValidate disabled={suggesting}>
+                {suggesting ? "Checking…" : "Suggest a price"}
+              </button>
+            </div>
           </div>
           <div>
             <label className="label">Overall grade</label>
@@ -55,6 +101,7 @@ export function ListingForm({ crops, specs, today }: { crops: Crop[]; specs: Cro
             <input className="input" name="available_until" type="date" min={today} required />
           </div>
         </div>
+        {suggestion && <SuggestionCard s={suggestion} onUse={setPrice} />}
       </section>
 
       <section className="space-y-4 border-t border-stone-100 pt-6">
