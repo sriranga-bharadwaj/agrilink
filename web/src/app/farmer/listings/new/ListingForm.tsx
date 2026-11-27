@@ -49,9 +49,13 @@ export function ListingForm({ crops, specs, today }: { crops: Crop[]; specs: Cro
   const [suggestion, suggestAction, suggesting] = useActionState(suggestPrice, null);
   const [price, setPrice] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
-  // Called directly (not as a form submission), so React does not reset the fields the farmer has filled in.
-  const requestSuggestion = () => startTransition(() => suggestAction(new FormData(formRef.current!)));
   const [cropId, setCropId] = useState(crops[0]?.crop_id);
+  const [suggestedFor, setSuggestedFor] = useState<number>(); // crop the shown suggestion belongs to
+  // Called directly (not as a form submission), so React does not reset the fields the farmer has filled in.
+  const requestSuggestion = () => {
+    setSuggestedFor(cropId);
+    startTransition(() => suggestAction(new FormData(formRef.current!)));
+  };
   const cropName = crops.find((c) => c.crop_id === cropId)?.crop_name;
   const spec = specs.find((s) => s.crop === cropName);
 
@@ -104,7 +108,7 @@ export function ListingForm({ crops, specs, today }: { crops: Crop[]; specs: Cro
             <input className="input" name="available_until" type="date" min={today} required />
           </div>
         </div>
-        {suggestion && <SuggestionCard s={suggestion} onUse={setPrice} />}
+        {suggestion && suggestedFor === cropId && <SuggestionCard s={suggestion} onUse={setPrice} />}
       </section>
 
       <section className="space-y-4 border-t border-stone-100 pt-6">

@@ -33,6 +33,14 @@ const DAY = 86_400_000;
 export const shiftDate = (iso: string, days: number) =>
   new Date(Date.parse(`${iso}T00:00:00Z`) + days * DAY).toISOString().slice(0, 10);
 
+/** Date to forecast for: today, or newest data + horizon when the data is older than that. */
+// shortcut: mandi_prices is a frozen export, so without this every suggestion fails ~4 weeks after it;
+// refresh web/data/mandi_prices.csv (ml/export_serving_data.py) to make suggestions current again.
+export function servingDate(today: string, latest: string | null, horizon: number): string {
+  const fromData = latest ? shiftDate(latest, horizon) : today;
+  return fromData < today ? fromData : today;
+}
+
 // Longest look-back of any feature: 365-day market premium and same-period-last-year, plus slack.
 export const LOOKBACK_DAYS = 400;
 

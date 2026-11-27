@@ -7,7 +7,7 @@ import { before, describe, it } from "node:test";
 import { csvObjects } from "../scripts/mysql/csv.mjs";
 import { computeFeatures, withDerived } from "../src/lib/price-features.ts";
 import { predictLogChange } from "../src/lib/price-model.ts";
-import { MANDI_ROWS_SQL, mandiRowsParams, suggestFromRows } from "../src/lib/price-suggest.ts";
+import { MANDI_ROWS_SQL, mandiRowsParams, servingDate, suggestFromRows } from "../src/lib/price-suggest.ts";
 import { connectMysql } from "./helpers.mjs";
 
 const WEB = path.resolve(import.meta.dirname, "..");
@@ -71,13 +71,13 @@ describe("price model parity with Python", () => {
 });
 
 describe("price suggestion", () => {
-  const suggest = async (input, date) => {
-    const db = await connectMysql();
+  const suggest = async (input, date, conn) => {
+    const db = conn ?? await connectMysql();
     try {
       const [dbRows] = await db.query(MANDI_ROWS_SQL, mandiRowsParams(spec, input, date));
       return suggestFromRows(spec, MODELS, dbRows.map((r) => ({ ...r, price: Number(r.price) })), { ...input, date });
     } finally {
-      await db.end();
+      if (!conn) await db.end();
     }
   };
 
@@ -94,24 +94,30 @@ describe("price suggestion", () => {
   it("ignores prices newer than t - 7 (leakage guard on the live MySQL path)", async () => {
     const input = { crop: "Tomato", variety: "", state: "Karnataka", district: "Kolar" };
     const date = "2026-11-25";
-    const before = await suggest(input, date);
     const db = await connectMysql();
-    let inserted = [];
     try {
+      const before = await suggest(input, date, db);
+      // Inside a transaction that is rolled back, so the fake rows are never saved even if the run is killed.
+      await db.beginTransaction();
       // Absurd prices for the same series, dated after t - 7: they must not move anything.
       for (const day of ["2026-11-19", "2026-11-22", "2026-11-25"]) {
-        const [res] = await db.query(
+        await db.query(
           `INSERT INTO mandi_prices (crop_id, product, variety_group, state, district, market_key, market, price_date, price_per_kg)
            SELECT crop_id, 'Tomato', 'Common', 'Karnataka', 'Kolar', 'kolar', 'Kolar APMC', ?, 999 FROM crops WHERE crop_name = 'Tomato'`,
           [day]);
-        inserted.push(res.insertId);
       }
-      const after = await suggest(input, date);
+      const after = await suggest(input, date, db);
       assert.deepEqual(after, before);
     } finally {
-      if (inserted.length) await db.query("DELETE FROM mandi_prices WHERE mandi_price_id IN (?)", [inserted]);
+      await db.rollback();
       await db.end();
     }
+  });
+
+  it("forecasts from the newest data once the export is older than the horizon", () => {
+    assert.equal(servingDate("2027-01-10", "2026-11-25", 7), "2026-12-02");
+    assert.equal(servingDate("2026-11-27", "2026-11-25", 7), "2026-11-27");
+    assert.equal(servingDate("2026-11-27", null, 7), "2026-11-27");
   });
 
   it("feature builder never reads a row dated after t - 7", () => {

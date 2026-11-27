@@ -3,7 +3,7 @@ import path from "node:path";
 import modelSpec from "../../models/price_model.json";
 import { query } from "./db";
 import {
-  MANDI_ROWS_SQL, mandiRowsParams, suggestFromRows, type FullSpec, type PriceSuggestion, type SuggestInput,
+  MANDI_ROWS_SQL, mandiRowsParams, servingDate, suggestFromRows, type FullSpec, type PriceSuggestion, type SuggestInput,
 } from "./price-suggest";
 
 const spec = modelSpec as unknown as FullSpec;
@@ -16,7 +16,8 @@ type Row = {
 
 /** Suggested price + calibrated 80% range for a farmer's crop, from government mandi prices in MySQL. */
 export async function suggestMandiPrice(input: Omit<SuggestInput, "date"> & { date?: string }): Promise<PriceSuggestion> {
-  const date = input.date ?? new Date().toISOString().slice(0, 10);
+  const [{ latest }] = await query<{ latest: string | null }>("SELECT MAX(price_date) AS latest FROM mandi_prices");
+  const date = input.date ?? servingDate(new Date().toISOString().slice(0, 10), latest, spec.horizon_days);
   const rows = await query<Row>(MANDI_ROWS_SQL, mandiRowsParams(spec, input, date));
   return suggestFromRows(spec, MODELS_DIR, rows, { ...input, date });
 }
