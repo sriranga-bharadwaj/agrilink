@@ -113,14 +113,14 @@ Requires MySQL 8, MongoDB and Node.js 24.
 
 ## Automated tests
 
-There are 43 tests, built on Node's built-in test runner:
+There are 44 tests, built on Node's built-in test runner:
 
 | File | Tests | What it covers |
 |---|---|---|
 | [`mysql.test.mjs`](web/tests/mysql.test.mjs) | 16 | Matching filters and ranking. Ordering: stock, price copy, generated total, oversell and rollback, requirement fill, ownership and crop checks. All lifecycle triggers: illegal jumps, immutable quantity, delivery tracking, audit history, stock returned on cancel. Review rules, CHECK constraints and the expiry procedure. |
 | [`mongo.test.mjs`](web/tests/mongo.test.mjs) | 6 | `$jsonSchema` rejections, the unique link to MySQL, wildcard-index use, the buyer quality-spec filter, cosine similarity, and a semantic-search query |
 | [`quality.test.mjs`](web/tests/quality.test.mjs) | 9 | Quality-constraint logic and form parsing |
-| [`pricing.test.mjs`](web/tests/pricing.test.mjs) | 7 | Price suggestion. **Parity:** the TypeScript features from the CSV and from MySQL match Python to 1e-9, and ONNX in Node matches the exported predictions. **Leakage guards:** prices dated after *t − 7* never change a suggestion, on the live SQL path or in the feature builder. Also a Kolar tomato suggestion, and the message for crops without data. |
+| [`pricing.test.mjs`](web/tests/pricing.test.mjs) | 8 | Price suggestion. **Parity:** the TypeScript features from the CSV and from MySQL match Python to 1e-9, and ONNX in Node matches the exported predictions. **Leakage guards:** prices dated after *t − 7* never change a suggestion, on the live SQL path or in the feature builder. Also a Kolar tomato suggestion, and the message for crops without data. |
 | [`price-adjust.test.mjs`](web/tests/price-adjust.test.mjs) | 5 | Listing rules (grade, organic, freshness, demand) and range scaling |
 
 Each database test creates its own rows and deletes them afterwards, so the suite can run repeatedly against the sample data. Every "blocked" case also checks that nothing changed.
