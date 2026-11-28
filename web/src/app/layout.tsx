@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { logout } from "@/app/actions/auth";
+import { Logo } from "@/components/Logo";
+import { NavLinks } from "@/components/NavLinks";
 import { getSession, homeFor } from "@/lib/session";
 import "./globals.css";
 
@@ -29,22 +31,22 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
-        <header className="border-b border-stone-200 bg-white">
-          <nav className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3">
+      <body className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col font-sans antialiased`}>
+        <header className="sticky top-0 z-10 border-b border-stone-200 bg-white/90 backdrop-blur">
+          <nav className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:gap-6">
             <Link href="/" className="flex items-center gap-2 font-semibold text-brand-700">
-              <span className="grid h-7 w-7 place-items-center rounded-md bg-brand-600 text-sm text-white">A</span>
-              AgriLink
+              <Logo />
+              <span className="hidden sm:inline">AgriLink</span>
             </Link>
-            <div className="flex flex-1 items-center gap-4 text-sm text-stone-600">
-              <Link href="/market" className="hover:text-stone-900">Marketplace</Link>
-              {session && (
-                <Link href={homeFor(session.role)} className="hover:text-stone-900">Dashboard</Link>
-              )}
-            </div>
+            <NavLinks
+              links={[
+                { href: "/market", label: "Marketplace" },
+                ...(session ? [{ href: homeFor(session.role), label: "Dashboard" }] : []),
+              ]}
+            />
             {session ? (
               <div className="flex items-center gap-3 text-sm">
-                <span className="hidden text-stone-600 sm:inline">
+                <span className="hidden text-stone-600 md:inline">
                   {session.name} · <span className="text-stone-400">{session.role.toLowerCase()}</span>
                 </span>
                 <form action={logout}>
@@ -59,7 +61,17 @@ export default async function RootLayout({
             )}
           </nav>
         </header>
-        <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+        <footer className="border-t border-stone-200 bg-white">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-5 text-xs text-stone-500">
+            <span>
+              Mandi prices: Agmarknet, Ministry of Agriculture &amp; Farmers Welfare, via{" "}
+              <a className="underline hover:text-stone-700" href="https://data.gov.in/resource/variety-wise-daily-market-prices-data-commodity">data.gov.in</a>{" "}
+              (Government Open Data License – India)
+            </span>
+            <a className="underline hover:text-stone-700" href="https://github.com/sriranga-bharadwaj/agrilink">Source on GitHub</a>
+          </div>
+        </footer>
       </body>
     </html>
   );
